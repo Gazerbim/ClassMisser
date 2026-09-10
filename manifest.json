@@ -1,0 +1,15 @@
+[
+	{
+		"request": {
+			"type": "ask_available_lobbies",
+			"data": "{}"
+		},
+		"response": {
+			"type": "availabel_lobbies",
+			"data": "{"lobbies": []}"
+		},
+
+	{
+]
+
+
