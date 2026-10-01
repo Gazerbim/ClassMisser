@@ -4,6 +4,8 @@ use std::sync::mpsc;
 use std::thread;
 use std::time;
 
+use crate::services::lobbies;
+
 pub struct Server {
     stream_list: Vec<TcpStream>,
     rx: std::sync::mpsc::Receiver<TcpStream>,
@@ -35,6 +37,7 @@ impl Server {
             for i in (0..closed_tcps.len()).rev() {
                 self.stream_list.remove(closed_tcps[i] as usize);
             }
+            thread::sleep(time::Duration::from_millis(1));
         }
     }
 

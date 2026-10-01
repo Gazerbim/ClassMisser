@@ -7,6 +7,8 @@ use crate::server::Server;
 
 mod server;
 
+pub mod services;
+
 fn main() {
     let listener = TcpListener::bind("127.0.0.1:9001").unwrap();
 
