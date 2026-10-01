@@ -67,8 +67,9 @@ impl Metagame {
                 return true;
             } else if action == String::from("Rejoindre un salon") {
                 //get la liste des lobby disponibles
+                let lobby_name = self.client.request(&"test".to_string());
                 self.lobby_selector
-                    .set_elements_list(vec![String::from("Elie"), String::from("Serguei")]);
+                    .set_elements_list(vec![String::from(lobby_name), String::from("Serguei")]);
                 self.state = State::ChooseLobby;
             } else if action == "Créer un salon".to_string() {
                 self.state = State::CreateLobby;

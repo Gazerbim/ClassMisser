@@ -33,11 +33,10 @@ impl Client {
                 // via platform-specific APIs such as epoll or IOCP
                 true
             }
-            Err(e) => false, //panic!("encountered IO error: {e}"),
+            Err(_e) => false, //panic!("encountered IO error: {e}"),
         }
     }
 
-    //à priori innutile
     pub fn request(&mut self, req: &String) -> String {
         self.send(req);
         self.stream
