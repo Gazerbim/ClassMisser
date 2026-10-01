@@ -5,7 +5,9 @@ use crate::client::Client;
 use crate::game::Game;
 use crate::types::states::State;
 
+use crate::menus::in_lobby::InLobby;
 use crate::menus::select_lobby::SelectLobby;
+use crate::menus::text_input::TextInput;
 
 pub struct Metagame {
     client: Client,
@@ -15,7 +17,12 @@ pub struct Metagame {
     chat: Chat,
 
     home: SelectLobby,
+    enter_username: TextInput,
     lobby_selector: SelectLobby,
+    lobby_creator: TextInput,
+    in_lobby: InLobby,
+
+    username: String,
 }
 
 impl Metagame {
@@ -23,7 +30,7 @@ impl Metagame {
         Metagame {
             client: Client::new(host),
             engine: console_engine::ConsoleEngine::init_fill(20).unwrap(),
-            state: State::Home,
+            state: State::EnterPseudo,
             game: Game::new(),
             chat: Chat::new(),
             home: SelectLobby::new(vec![
@@ -31,7 +38,11 @@ impl Metagame {
                 String::from("Rejoindre un salon"),
                 String::from("Quitter"),
             ]),
-            lobby_selector: SelectLobby::new(vec![String::from("Elie"), String::from("Serguei")]),
+            enter_username: TextInput::new(String::from("Rentre to pseudo ici:"), 25),
+            lobby_selector: SelectLobby::new(Vec::new()),
+            lobby_creator: TextInput::new("Nom du salon à créer".to_string(), 25),
+            in_lobby: InLobby::new("".to_string()),
+            username: String::from(""),
         }
     }
 
@@ -40,32 +51,101 @@ impl Metagame {
             self.engine.wait_frame(); // wait for next frame + capture inputs
             self.engine.clear_screen(); // reset the screen
 
-            if self.state == State::Home {
-                let action = self.home.handling_events(&self.engine);
-                if action == String::from("") {
-                } else if action == "Quitter" {
-                    break;
-                } else if action == String::from("Rejoindre un salon") {
-                    self.state = State::ChooseLobby;
-                }
-                self.home.update();
-                self.home.display(&mut self.engine, (5, 5));
-            } else if self.state == State::ChooseLobby {
-                let action = &self.lobby_selector.handling_events(&self.engine);
-                self.lobby_selector.display(&mut self.engine, (10, 5));
-            } else if self.state == State::InGame {
-                self.game.handling_hevents();
-                self.chat.handling_events();
-                self.game.update();
-                self.chat.update();
-                self.game.display();
-                self.chat.display();
+            if self.handling_events() {
+                break;
             }
-
-            if self.engine.is_key_pressed(console_engine::KeyCode::Esc) {
-                break; // exits app
-            }
-            self.engine.draw(); // draw the screen
+            self.update();
+            self.display();
         }
+    }
+
+    fn handling_events(&mut self) -> bool {
+        if self.state == State::Home {
+            let action = self.home.handling_events(&self.engine);
+            if action == String::from("") {
+            } else if action == "Quitter" {
+                return true;
+            } else if action == String::from("Rejoindre un salon") {
+                //get la liste des lobby disponibles
+                self.lobby_selector
+                    .set_elements_list(vec![String::from("Elie"), String::from("Serguei")]);
+                self.state = State::ChooseLobby;
+            } else if action == "Créer un salon".to_string() {
+                self.state = State::CreateLobby;
+            }
+        } else if self.state == State::EnterPseudo {
+            self.enter_username.handling_events(&self.engine);
+            if self.engine.is_key_pressed(console_engine::KeyCode::Esc) {
+                return true; // exits app
+            }
+        } else if self.state == State::CreateLobby {
+            self.lobby_creator.handling_events(&self.engine);
+            if self.engine.is_key_pressed(console_engine::KeyCode::Esc) {
+                self.state = State::Home;
+            }
+        } else if self.state == State::InLobby {
+            self.lobby_creator.handling_events(&self.engine);
+            if self.engine.is_key_pressed(console_engine::KeyCode::Esc) {
+                //envoyer une requête pour quitter le lobby
+                self.state = State::Home;
+            }
+        } else if self.state == State::ChooseLobby {
+            if self.engine.is_key_pressed(console_engine::KeyCode::Esc) {
+                self.state = State::Home;
+            }
+            let nom_lobby = self.lobby_selector.handling_events(&self.engine);
+            if nom_lobby != "".to_string() {
+                //demande connection au lobby
+                // si demande acceptée, on rentre dans le lobby
+                self.state = State::InLobby;
+                self.in_lobby.set_name(nom_lobby);
+            }
+        } else if self.state == State::InGame {
+            self.game.handling_hevents();
+            self.chat.handling_events();
+        }
+        false
+    }
+
+    fn update(&mut self) {
+        if self.state == State::Home {
+            self.home.update();
+        } else if self.state == State::EnterPseudo {
+            self.username = self.enter_username.update();
+            if self.username != String::from("") {
+                //envoyer au serveur le pseudo
+                self.state = State::Home;
+            }
+        } else if self.state == State::ChooseLobby {
+            self.lobby_selector.update();
+        } else if self.state == State::CreateLobby {
+            let new_lobby_name = self.lobby_creator.update();
+            if new_lobby_name != String::from("") {
+                //creer le lobby et le rejoindre
+                self.in_lobby.set_name(new_lobby_name);
+                self.state = State::InLobby;
+            }
+        } else if self.state == State::InGame {
+            self.game.update();
+            self.chat.update();
+        }
+    }
+
+    fn display(&mut self) {
+        if self.state == State::Home {
+            self.home.display(&mut self.engine, (5, 5));
+        } else if self.state == State::EnterPseudo {
+            self.enter_username.display(&mut self.engine, (10, 10));
+        } else if self.state == State::ChooseLobby {
+            self.lobby_selector.display(&mut self.engine, (10, 5));
+        } else if self.state == State::CreateLobby {
+            self.lobby_creator.display(&mut self.engine, (10, 10));
+        } else if self.state == State::InLobby {
+            self.in_lobby.display(&mut self.engine, (10, 10));
+        } else if self.state == State::InGame {
+            self.game.display();
+            self.chat.display();
+        }
+        self.engine.draw(); // draw the screen
     }
 }
