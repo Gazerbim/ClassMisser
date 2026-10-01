@@ -1,15 +1,13 @@
 [
 	{
 		"request": {
-			"type": "ask_available_lobbies",
+			"type": "lobbies",
+			"header": "list_available_lobbies",
 			"data": "{}"
 		},
 		"response": {
-			"type": "availabel_lobbies",
-			"data": "{"lobbies": []}"
-		},
-
-	{
+			"type": "list_available_lobbies",
+			"data": "{lobbies: []}"
+		}
+	}
 ]
-
-
