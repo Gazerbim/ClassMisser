@@ -72,6 +72,7 @@ impl Metagame {
                     .set_elements_list(vec![String::from(lobby_name), String::from("Serguei")]);
                 self.state = State::ChooseLobby;
             } else if action == "Créer un salon".to_string() {
+                //requête pour créer un salon
                 self.state = State::CreateLobby;
             }
         } else if self.state == State::EnterPseudo {

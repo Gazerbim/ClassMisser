@@ -1,4 +1,15 @@
 [
+  {
+		"request": {
+			"type": "username",
+			"header": "give_new_username",
+			"data": "{username: String}"
+		},
+		"response": {
+			"type": "is_username_available",
+			"data": "{accept: bool}"
+		}
+	},
 	{
 		"request": {
 			"type": "lobbies",
@@ -7,7 +18,95 @@
 		},
 		"response": {
 			"type": "list_available_lobbies",
+			"data": "{lobbies: [String]}"
+		}
+	},
+	{
+		"request": {
+			"type": "lobbies",
+			"header": "create_lobby",
+			"data": "{name: String}"
+		},
+		"response": {
+			"type": "created_lobby",
+			"data": "{accept: bool}"
+		}
+	},
+ {
+	"request": {
+		"type": "lobbies",
+		"header": "enter_lobby",
+		"data": "{}"
+	},
+	"response": {
+		"type": "enter_lobby",
+		"data": "{accept: bool}"
+	}
+},
+{
+		"request": {
+			"type": "lobbies",
+			"header": "list_available_lobbies",
+			"data": "{}"
+		},
+		"response": {
+			"type": "list_available_lobbies",
 			"data": "{lobbies: []}"
+		}
+	},
+ {
+	"request": {
+		"type": "lobbies",
+		"header": "quit_lobby",
+		"data": "{}"
+	},
+	"response": {
+		"type": "quit_lobby",
+		"data": "{}"
+	}
+},
+{
+		"request": {
+			"type": "lobbies",
+			"header": "lobby_toujours_actif",
+			"data": "{}"
+		},
+		"response": {
+			"type": "list_available_lobbies",
+			"data": "{accept: bool}"
+		}
+	},
+{
+		"request": {
+			"type": "game",
+			"header": "start_game",
+			"data": "{number_of_player: number}"
+		},
+		"response": {
+			"type": "game_is_starting",
+			"data": "{accept: bool, colot: String}"
+		}
+	},
+ {
+	"request": {
+		"type": "game",
+		"header": "is_the_game_starting",
+		"data": "{}"
+	},
+	"response": {
+		"type": "game_is_starting",
+		"data": "{lobbies: {accept: bool, color: String}}"
+	}
+},
+{
+		"request": {
+			"type": "game",
+			"header": "quitted_game",
+			"data": "{}"
+		},
+		"response": {
+			"type": "game_quitted",
+			"data": "{}"
 		}
 	}
 ]
