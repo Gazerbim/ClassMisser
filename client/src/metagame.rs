@@ -3,6 +3,7 @@ use console_engine::ConsoleEngine;
 use crate::chat::Chat;
 use crate::client::Client;
 use crate::game::Game;
+use crate::menus::home::Home;
 use crate::types::states::State;
 
 use crate::menus::in_lobby::InLobby;
@@ -17,6 +18,7 @@ pub struct Metagame {
     chat: Chat,
 
     home: SelectLobby,
+    home_layout: Home,
     enter_username: TextInput,
     lobby_selector: SelectLobby,
     lobby_creator: TextInput,
@@ -38,6 +40,7 @@ impl Metagame {
                 String::from("Rejoindre un salon"),
                 String::from("Quitter"),
             ]),
+            home_layout: Home::new(),
             enter_username: TextInput::new(String::from("Rentre to pseudo ici:"), 25),
             lobby_selector: SelectLobby::new(Vec::new()),
             lobby_creator: TextInput::new("Nom du salon à créer".to_string(), 25),
@@ -118,6 +121,7 @@ impl Metagame {
     fn update(&mut self) {
         if self.state == State::Home {
             self.home.update();
+            self.home_layout.update();
         } else if self.state == State::EnterPseudo {
             self.username = self.enter_username.update();
             if self.username != String::from("") {
@@ -150,7 +154,10 @@ impl Metagame {
         let left_third = ((self.engine.get_width() / 2) - 15) as i32;
         let top_left = (self.engine.get_height() / 4) as i32;
         if self.state == State::Home {
-            self.home.display(&mut self.engine, (left_third, top_left));
+            self.home
+                .display(&mut self.engine, (left_third, top_left + 10));
+            self.home_layout
+                .display(&mut self.engine, (left_third - 3, top_left * 4 / 15));
         } else if self.state == State::EnterPseudo {
             self.enter_username
                 .display(&mut self.engine, (left_third, top_left));
