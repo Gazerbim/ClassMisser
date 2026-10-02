@@ -1,5 +1,6 @@
 mod server;
 
 fn main() {
-    server::start_server();
+    let server = server::Server::new(9001);
+    server.start_server();
 }

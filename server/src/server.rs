@@ -1,92 +1,218 @@
-use std::io::{Read, Write};
-use std::net::{TcpListener, TcpStream};
-use std::sync::mpsc;
-use std::thread;
-use std::time;
+use std::io::{self, Read, Write};
+use mio::net::{TcpStream, TcpListener};
+use mio::{Token, Events, Interest, Poll};
 
-pub fn start_server() {
-    let listener = TcpListener::bind("127.0.0.1:9001").unwrap();
-    let mut stream_list: Vec<TcpStream> = Vec::new();
+use std::collections::HashMap;
+use std::net::SocketAddr;
 
-    let (tx, rx) = mpsc::channel();
+const SERVER: Token = Token(0);
 
-    //thread qui cherche de nouvelles connections
-    thread::spawn(move || {
-        look_for_connections(&listener, &tx);
-    });
+pub struct Client{
+    socket: TcpStream,
+    buffer: Vec<u8>,
+    outgoing: Vec<u8>,
+    sent: usize,
+}
 
-    //thread principal du serveur
-    loop {
-        get_new_connection(&rx, &mut stream_list);
-        thread::sleep(time::Duration::from_millis(1));
+pub struct Server{
+    address: String,
+    port:String
+}
 
-        //traitement ici
-        let mut closed_tcps: Vec<i32> = Vec::new();
-        for i in 0..stream_list.len() {
-            let mut buffer = [0; 1024];
-            //let size = stream_list[i].read(&mut buffer).unwrap();
-            match stream_list[i].read(&mut buffer) {
-                Ok(_size) => {
-                    let message = String::from_utf8_lossy(&buffer[.._size]);
-                    if message != "" {
-                        println!("Message: {}, de {}", message, i);
-                        //broadcast
-                        broadcast(&mut stream_list, String::from(message));
-                    } else {
-                        closed_tcps.push(i as i32);
+impl Server{
+    pub fn start_server(&self)->io::Result<()>{
+        let mut poll = Poll::new()?;
+        let mut events = Events::with_capacity(128);
+
+        let address:SocketAddr = format!("{}:{}", self.address, self.port).parse().unwrap();
+        let mut listener = TcpListener::bind(address)?;
+
+        poll.registry().register(&mut listener, SERVER, Interest::READABLE,)?;
+
+        //stockage des clients
+        let mut clients: HashMap<Token, Client> = HashMap::new();
+
+        let mut next_token = 1;
+
+        println!("Serveur démarré sur {}:{}", self.address, self.port);
+
+        //main loop
+        loop{
+            //attendre les evts réseau
+            poll.poll(&mut events, None)?;
+
+            for event in events.iter(){
+                let token = event.token();
+                let readable = event.is_readable();
+                let writable = event.is_writable();
+                
+                //Nouvelle connexion
+                if token == SERVER{
+                    loop{
+                        match listener.accept(){
+                            Ok((mut socket, addr))=>{
+                                let token = Token(next_token);
+                                next_token += 1;
+
+                                print!("Connexion:{}", addr);
+
+                                poll.registry().register(&mut socket, token, Interest::READABLE)?;
+                                clients.insert(token, Client { socket, buffer: Vec::new(), outgoing: Vec::new(), sent: 0 });
+
+                            }
+
+                            Err(ref e) if e.kind() == io::ErrorKind::WouldBlock=>{
+                                break;
+                            }
+
+                            Err(e) => {return Err(e)}
+                        }
+                    }
+                    continue;
+                }
+
+                //message d'un client
+
+                let mut messages = Vec::new();
+                let mut disconnected = false;
+
+                if let Some(client) = clients.get_mut(&token){
+                    if readable{
+                        let mut temp = [0u8; 4096];
+                        loop{
+                            match client.socket.read(&mut temp) {
+                                Ok(0) => {
+                                    disconnected = true;
+                                    break;
+                                }
+
+                                Ok(size)=>{
+                                    client.buffer.extend_from_slice(&temp[..size]);
+                                    while let Some(pos)=client.buffer.iter().position(|&b| b==b'\n') {
+                                        let line: Vec<u8> = client.buffer.drain(..=pos).collect();
+                                        let message = String::from_utf8_lossy(&line[..line.len()-1]).trim_end_matches('\r').to_string();
+
+                                        messages.push(message);
+                                    }
+                                }
+
+                                Err(ref e) if e.kind() == io::ErrorKind::WouldBlock=>{
+                                    break;
+                                }
+                                Err(ref e) if e.kind() == io::ErrorKind::Interrupted=>{
+                                    continue;
+                                }
+                                Err(_) =>{
+                                    disconnected = true;
+                                    break;
+                                }
+                            }
+                        }
                     }
                 }
-                Err(ref e) if e.kind() == std::io::ErrorKind::WouldBlock => {
-                    // wait until network socket is ready, typically implemented
-                    // via platform-specific APIs such as epoll or IOCP
+
+                //logique du jeu
+
+                if !disconnected{
+                    for message in messages{
+                        println!("Client {:?} : {}", token, message);
+                        let responses = handle_message(token, &message);
+
+                        //Ajout des réponses dans les buffers
+                        for (recipient, response) in responses {
+                            if let Some(client) = clients.get_mut(&recipient) {
+
+                                client.outgoing.extend_from_slice(response.as_bytes());
+
+                                poll.registry().reregister(
+                                    &mut client.socket,
+                                    recipient,
+                                    Interest::READABLE.add(Interest::WRITABLE),
+                                )?;
+                            }
+                        }
+                    }
                 }
-                Err(e) => panic!("encountered IO error: {e}"),
-            };
+
+                //envoi des réponses
+                if let Some(client) = clients.get_mut(&token){
+                    if writable && !disconnected{
+                        loop{
+                            if client.sent == client.outgoing.len(){
+                                client.outgoing.clear();
+                                client.sent = 0;
+                                break;
+                            }
+
+                            match client.socket.write(&client.outgoing[client.sent..]){
+                                Ok(0) => {
+                                    disconnected = true;
+                                    break;
+                                }
+                                Ok(size)=>{
+                                    client.sent += size;
+                                }
+                                Err(ref e) if e.kind() == io::ErrorKind::WouldBlock=>{
+                                    break;
+                                }
+                                Err(ref e) if e.kind() == io::ErrorKind::Interrupted=>{
+                                    continue;
+                                }
+                                Err(_) =>{
+                                    disconnected = true;
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                }
+
+                if disconnected{
+
+                    if let Some(mut client) = clients.remove(&token){
+                        let _ = poll.registry().deregister(&mut client.socket);
+                    }
+                    println!("Client {:?} déconnecté", token);
+
+                }else if let Some(client) = clients.get_mut(&token){
+
+                    let interest: Interest = if client.sent < client.outgoing.len() {
+                        Interest::READABLE.add(Interest::WRITABLE)
+                    }else{
+                        Interest::READABLE
+                    };
+
+                    poll.registry().register(&mut client.socket, token, interest)?;
+
+                }
+            }
+
         }
-        //retire les sockets fermés
-        for i in (0..closed_tcps.len()).rev() {
-            stream_list.remove(closed_tcps[i] as usize);
+    }
+
+    // =====================================
+    // LOGIQUE MÉTIER
+    // =====================================
+
+    
+
+    pub fn new(port: u16) -> Server {
+        Server {
+            address: String::from("127.0.0.1"),
+            port: port.to_string()
         }
     }
 }
 
-fn look_for_connections(listener: &TcpListener, tx: &std::sync::mpsc::Sender<TcpStream>) {
-    loop {
-        match listener.accept() {
-            Ok((_socket, addr)) => {
-                println!("new client: {addr:?}");
-                tx.send(_socket).unwrap();
-            }
-            Err(e) => println!("couldn't get client: {e:?}"),
-        }
-        thread::sleep(time::Duration::from_millis(1));
-    }
-}
+fn handle_message(
+    sender: Token,
+    message: &str,
+) -> Vec<(Token, String)> {
 
-fn get_new_connection(rx: &std::sync::mpsc::Receiver<TcpStream>, stream_list: &mut Vec<TcpStream>) {
-    match rx.try_recv() {
-        Ok(_new_stream) => {
-            _new_stream
-                .set_nonblocking(true)
-                .expect("set_nonblocking call failed");
-            // _new_stream
-            //     .set_read_timeout(Some(Duration::from_millis(250)))
-            //     .expect("set_read_timeout call failed");
-            stream_list.push(_new_stream);
-            for i in 0..stream_list.len() {
-                println!("User {} connected", stream_list[i].peer_addr().unwrap());
-            }
-        }
-        Err(e) => {
-            if e != mpsc::TryRecvError::Empty {
-                println!("couldn't get new stream: {e:?}");
-            }
-        }
-    }
-}
+    println!("Traitement du message : {}", message);
 
-fn broadcast(stream_list: &mut Vec<TcpStream>, message: String) {
-    for j in 0..stream_list.len() {
-        stream_list[j].write_all(message.as_bytes()).unwrap();
-    }
+    // Pour le moment, on répond uniquement à l'expéditeur.
+    vec![
+        (sender, format!("ACK: {}\n", message))
+    ]
 }
