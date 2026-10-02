@@ -1,0 +1,13 @@
+[
+	{
+		"request": {
+			"type": "lobbies",
+			"header": "list_available_lobbies",
+			"data": "{}"
+		},
+		"response": {
+			"type": "list_available_lobbies",
+			"data": "{lobbies: []}"
+		}
+	}
+]
