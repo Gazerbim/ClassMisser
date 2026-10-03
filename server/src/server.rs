@@ -1,36 +1,42 @@
 use std::io::{self, Read, Write};
-use mio::net::{TcpStream, TcpListener};
+use mio::net::{TcpListener};
 use mio::{Token, Events, Interest, Poll};
 
-use std::collections::HashMap;
 use std::net::SocketAddr;
+
+use crate::services::lobbies::{Lobbies};
+use crate::services::clients::{Clients, Client};
+
 
 const SERVER: Token = Token(0);
 
-pub struct Client{
-    socket: TcpStream,
-    buffer: Vec<u8>,
-    outgoing: Vec<u8>,
-    sent: usize,
-}
-
 pub struct Server{
     address: String,
-    port:String
+    port:String,
+    lobbies: Lobbies,
+    clients: Clients,
+    poll: Poll,
 }
 
 impl Server{
-    pub fn start_server(&self)->io::Result<()>{
-        let mut poll = Poll::new()?;
+
+    pub fn new(port: u16) -> Server {
+        Server {
+            address: String::from("127.0.0.1"),
+            port: port.to_string(),
+            lobbies: Lobbies::new(),
+            clients: Clients::new(),
+            poll:Poll::new().unwrap(),
+        }
+    }
+
+    pub fn start_server(&mut self)->io::Result<()>{
         let mut events = Events::with_capacity(128);
 
         let address:SocketAddr = format!("{}:{}", self.address, self.port).parse().unwrap();
         let mut listener = TcpListener::bind(address)?;
 
-        poll.registry().register(&mut listener, SERVER, Interest::READABLE,)?;
-
-        //stockage des clients
-        let mut clients: HashMap<Token, Client> = HashMap::new();
+        self.poll.registry().register(&mut listener, SERVER, Interest::READABLE,)?;
 
         let mut next_token = 1;
 
@@ -39,7 +45,7 @@ impl Server{
         //main loop
         loop{
             //attendre les evts réseau
-            poll.poll(&mut events, None)?;
+            self.poll.poll(&mut events, None)?;
 
             for event in events.iter(){
                 let token = event.token();
@@ -56,8 +62,8 @@ impl Server{
 
                                 print!("Connexion:{}", addr);
 
-                                poll.registry().register(&mut socket, token, Interest::READABLE)?;
-                                clients.insert(token, Client { socket, buffer: Vec::new(), outgoing: Vec::new(), sent: 0 });
+                                self.poll.registry().register(&mut socket, token, Interest::READABLE)?;
+                                self.clients.insert(token, Client::new(socket, token));
 
                             }
 
@@ -76,7 +82,7 @@ impl Server{
                 let mut messages = Vec::new();
                 let mut disconnected = false;
 
-                if let Some(client) = clients.get_mut(&token){
+                if let Some(client) = self.clients.list.get_mut(&token){
                     if readable{
                         let mut temp = [0u8; 4096];
                         loop{
@@ -120,11 +126,11 @@ impl Server{
 
                         //Ajout des réponses dans les buffers
                         for (recipient, response) in responses {
-                            if let Some(client) = clients.get_mut(&recipient) {
+                            if let Some(client) = self.clients.list.get_mut(&recipient) {
 
                                 client.outgoing.extend_from_slice(response.as_bytes());
 
-                                poll.registry().reregister(
+                                self.poll.registry().reregister(
                                     &mut client.socket,
                                     recipient,
                                     Interest::READABLE.add(Interest::WRITABLE),
@@ -135,7 +141,7 @@ impl Server{
                 }
 
                 //envoi des réponses
-                if let Some(client) = clients.get_mut(&token){
+                if let Some(client) = self.clients.list.get_mut(&token){
                     if writable && !disconnected{
                         loop{
                             if client.sent == client.outgoing.len(){
@@ -169,12 +175,12 @@ impl Server{
 
                 if disconnected{
 
-                    if let Some(mut client) = clients.remove(&token){
-                        let _ = poll.registry().deregister(&mut client.socket);
+                    if let Some(mut client) = self.clients.list.remove(&token){
+                        let _ = self.poll.registry().deregister(&mut client.socket);
                     }
                     println!("Client {:?} déconnecté", token);
 
-                }else if let Some(client) = clients.get_mut(&token){
+                }else if let Some(client) = self.clients.list.get_mut(&token){
 
                     let interest: Interest = if client.sent < client.outgoing.len() {
                         Interest::READABLE.add(Interest::WRITABLE)
@@ -182,26 +188,50 @@ impl Server{
                         Interest::READABLE
                     };
 
-                    poll.registry().register(&mut client.socket, token, interest)?;
+                    self.poll.registry().reregister(&mut client.socket, token, interest)?;
 
                 }
             }
 
         }
     }
+   
 
-    // =====================================
-    // LOGIQUE MÉTIER
-    // =====================================
+    fn broadcast_to_lobby(
+        &mut self,
+        lobby: usize,
+        message: &str
+    ) -> io::Result<()> {
 
-    
+        // On récupère les Token des joueurs du lobby.
+        // clone() évite de conserver un emprunt sur self.lobbies.
+        let clients_tokens = self.lobbies.list
+            .get(lobby)
+            .ok_or_else(|| io::Error::new(
+                io::ErrorKind::NotFound,
+                "Lobby introuvable"
+            ))?
+            .list_players.clone();
 
-    pub fn new(port: u16) -> Server {
-        Server {
-            address: String::from("127.0.0.1"),
-            port: port.to_string()
+        // On parcourt les Token et on modifie directement les clients.
+        for token in clients_tokens {
+
+            if let Some(client) = self.clients.list.get_mut(&token) {
+
+                client.outgoing.extend_from_slice(message.as_bytes());
+
+                self.poll.registry().reregister(
+                    &mut client.socket,
+                    client.token,
+                    Interest::READABLE.add(Interest::WRITABLE),
+                )?;
+            }
         }
+
+        Ok(())
     }
+
+
 }
 
 fn handle_message(
