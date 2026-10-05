@@ -1,28 +1,25 @@
-use std::io::{self, Read, Write};
-use mio::net::{TcpListener};
-use mio::{Token, Events, Interest, Poll};
+use mio::net::TcpListener;
+use mio::{Events, Interest, Poll, Token};
 use serde_json::Value;
+use std::io::{self, Read, Write};
 
 use std::net::SocketAddr;
 
-use crate::services::lobbies::{Lobbies};
-use crate::services::clients::{Clients, Client};
+use crate::services::clients::{Client, Clients};
+use crate::services::lobbies::Lobbies;
 use crate::services::protocol::Request;
-
 
 const SERVER: Token = Token(0);
 
-pub struct Server{
+pub struct Server {
     address: String,
-    port:String,
+    port: String,
     lobbies: Lobbies,
     clients: Clients,
     poll: Poll,
 }
 
-
 impl Server {
-
     pub fn new(port: u16) -> Server {
         Server {
             address: String::from("127.0.0.1"),
@@ -36,30 +33,24 @@ impl Server {
     // MAIN LOOP
 
     pub fn start_server(&mut self) -> io::Result<()> {
-
         let mut events = Events::with_capacity(128);
 
-        let address: SocketAddr =
-            format!("{}:{}", self.address, self.port).parse().unwrap();
+        let address: SocketAddr = format!("{}:{}", self.address, self.port).parse().unwrap();
 
         let mut listener = TcpListener::bind(address)?;
 
-        self.poll.registry().register(
-            &mut listener,
-            SERVER,
-            Interest::READABLE,
-        )?;
+        self.poll
+            .registry()
+            .register(&mut listener, SERVER, Interest::READABLE)?;
 
         let mut next_token = 1;
 
         println!("Serveur démarré sur {}:{}", self.address, self.port);
 
         loop {
-
             self.poll.poll(&mut events, None)?;
 
             for event in events.iter() {
-
                 let token = event.token();
                 let readable = event.is_readable();
                 let writable = event.is_writable();
@@ -76,7 +67,6 @@ impl Server {
         }
     }
 
-
     // CONNECTION MANAGEMENT
 
     fn accept_connections(
@@ -84,28 +74,19 @@ impl Server {
         listener: &mut TcpListener,
         next_token: &mut usize,
     ) -> io::Result<()> {
-
         loop {
-
             match listener.accept() {
-
                 Ok((mut socket, addr)) => {
-
                     let token = Token(*next_token);
                     *next_token += 1;
 
                     println!("Connexion : {}", addr);
 
-                    self.poll.registry().register(
-                        &mut socket,
-                        token,
-                        Interest::READABLE,
-                    )?;
+                    self.poll
+                        .registry()
+                        .register(&mut socket, token, Interest::READABLE)?;
 
-                    self.clients.insert(
-                        token,
-                        Client::new(socket, token),
-                    );
+                    self.clients.insert(token, Client::new(socket, token));
                 }
 
                 Err(ref e) if e.kind() == io::ErrorKind::WouldBlock => {
@@ -123,17 +104,13 @@ impl Server {
         Ok(())
     }
 
-
     fn disconnect_client(&mut self, token: Token) {
-
         if let Some(mut client) = self.clients.list.remove(&token) {
-
             let _ = self.poll.registry().deregister(&mut client.socket);
 
             println!("Client {:?} déconnecté", token);
         }
     }
-
 
     // CLIENT EVENT MANAGEMENT
 
@@ -143,12 +120,10 @@ impl Server {
         readable: bool,
         writable: bool,
     ) -> io::Result<()> {
-
         // Réception des messages
         let mut disconnected = false;
 
         if readable {
-
             let (messages, disconnected_read) = self.read_messages(token);
 
             disconnected = disconnected_read;
@@ -185,42 +160,31 @@ impl Server {
         Ok(())
     }
 
-
     // READING messages
 
     fn read_messages(&mut self, token: Token) -> (Vec<String>, bool) {
-
         let mut messages = Vec::new();
         let mut disconnected = false;
 
         if let Some(client) = self.clients.list.get_mut(&token) {
-
             let mut temp = [0u8; 4096];
 
             loop {
-
                 match client.socket.read(&mut temp) {
-
                     Ok(0) => {
                         disconnected = true;
                         break;
                     }
 
                     Ok(size) => {
-
                         client.buffer.extend_from_slice(&temp[..size]);
 
-                        while let Some(pos) =
-                            client.buffer.iter().position(|&b| b == b'\n')
-                        {
-                            let line: Vec<u8> =
-                                client.buffer.drain(..=pos).collect();
+                        while let Some(pos) = client.buffer.iter().position(|&b| b == b'\n') {
+                            let line: Vec<u8> = client.buffer.drain(..=pos).collect();
 
-                            let message = String::from_utf8_lossy(
-                                &line[..line.len() - 1]
-                            )
-                            .trim_end_matches('\r')
-                            .to_string();
+                            let message = String::from_utf8_lossy(&line[..line.len() - 1])
+                                .trim_end_matches('\r')
+                                .to_string();
 
                             messages.push(message);
                         }
@@ -245,21 +209,17 @@ impl Server {
         (messages, disconnected)
     }
 
-
     // =========================================================
     // WRITING
     // =========================================================
 
     fn flush_client(&mut self, token: Token) -> bool {
-
         let Some(client) = self.clients.list.get_mut(&token) else {
             return false;
         };
 
         loop {
-
             if client.sent == client.outgoing.len() {
-
                 client.outgoing.clear();
                 client.sent = 0;
 
@@ -267,7 +227,6 @@ impl Server {
             }
 
             match client.socket.write(&client.outgoing[client.sent..]) {
-
                 Ok(0) => {
                     return true;
                 }
@@ -293,42 +252,27 @@ impl Server {
         false
     }
 
-
     fn update_client_interest(&mut self, token: Token) -> io::Result<()> {
-
         if let Some(client) = self.clients.list.get_mut(&token) {
-
             let interest = if client.sent < client.outgoing.len() {
-
                 Interest::READABLE.add(Interest::WRITABLE)
-
             } else {
-
                 Interest::READABLE
             };
 
-            self.poll.registry().reregister(
-                &mut client.socket,
-                token,
-                interest,
-            )?;
+            self.poll
+                .registry()
+                .reregister(&mut client.socket, token, interest)?;
         }
 
         Ok(())
     }
 
-
     // MESSAGE SENDING
 
     // Envoi à un seul client
-    pub fn send_to_client(
-        &mut self,
-        token: Token,
-        message: &str,
-    ) -> io::Result<()> {
-
+    pub fn send_to_client(&mut self, token: Token, message: &str) -> io::Result<()> {
         if let Some(client) = self.clients.list.get_mut(&token) {
-
             client.outgoing.extend_from_slice(message.as_bytes());
 
             self.update_client_interest(token)?;
@@ -337,14 +281,8 @@ impl Server {
         Ok(())
     }
 
-
     // Envoi à une liste de clients
-    pub fn send_to_clients(
-        &mut self,
-        tokens: &[Token],
-        message: &str,
-    ) -> io::Result<()> {
-
+    pub fn send_to_clients(&mut self, tokens: &[Token], message: &str) -> io::Result<()> {
         for &token in tokens {
             self.send_to_client(token, message)?;
         }
@@ -352,20 +290,13 @@ impl Server {
         Ok(())
     }
 
-
     // Broadcast à un lobby
-    pub fn broadcast_to_lobby(
-        &mut self,
-        lobby: usize,
-        message: &str,
-    ) -> io::Result<()> {
-
-        let tokens = self.lobbies.list
+    pub fn broadcast_to_lobby(&mut self, lobby: usize, message: &str) -> io::Result<()> {
+        let tokens = self
+            .lobbies
+            .list
             .get(lobby)
-            .ok_or_else(|| io::Error::new(
-                io::ErrorKind::NotFound,
-                "Lobby introuvable",
-            ))?
+            .ok_or_else(|| io::Error::new(io::ErrorKind::NotFound, "Lobby introuvable"))?
             .list_players
             .clone();
 
@@ -374,14 +305,7 @@ impl Server {
         Ok(())
     }
 
-
-
-    fn handle_message(
-        &mut self,
-        sender: Token,
-        message: &str,
-    ) -> io::Result<()> {
-
+    fn handle_message(&mut self, sender: Token, message: &str) -> io::Result<()> {
         // Décodage JSON
         let parsed: Value = match serde_json::from_str(message) {
             Ok(value) => value,
@@ -390,14 +314,12 @@ impl Server {
 
                 return self.send_to_client(
                     sender,
-                    &Self::make_response(
-                        "error",
-                        serde_json::json!({"message": "Invalid JSON"})
-                    )
+                    &Self::make_response("error", serde_json::json!({"message": "Invalid JSON"})),
                 );
             }
         };
 
+        //######################
         let request_value = parsed.get("request").unwrap_or(&parsed);
 
         let request: Request = match serde_json::from_value(request_value.clone()) {
@@ -409,22 +331,18 @@ impl Server {
                     sender,
                     &Self::make_response(
                         "error",
-                        serde_json::json!({"message": "Invalid request"})
-                    )
+                        serde_json::json!({"message": "Invalid request"}),
+                    ),
                 );
             }
         };
 
         println!(
             "Requête reçue : type={}, header={}",
-            request.request_type,
-            request.header
+            request.request_type, request.header
         );
 
-        match (
-            request.request_type.as_str(),
-            request.header.as_str()
-        ) {
+        match (request.request_type.as_str(), request.header.as_str()) {
             ("username", "give_new_username") => {
                 self.handle_give_new_username(sender, &request.data)?;
             }
@@ -464,16 +382,15 @@ impl Server {
             _ => {
                 eprintln!(
                     "Requête inconnue : {} / {}",
-                    request.request_type,
-                    request.header
+                    request.request_type, request.header
                 );
 
                 self.send_to_client(
                     sender,
                     &Self::make_response(
                         "error",
-                        serde_json::json!({"message": "Unknown request"})
-                    )
+                        serde_json::json!({"message": "Unknown request"}),
+                    ),
                 )?;
             }
         }
@@ -481,32 +398,20 @@ impl Server {
         Ok(())
     }
 
-
     // pour construire les réponses JSON
-    fn make_response(
-        response_type: &str,
-        data: Value,
-    ) -> String {
-
+    fn make_response(response_type: &str, data: Value) -> String {
         serde_json::json!({
             "type": response_type,
             "data": data
-        }).to_string() + "\n"
+        })
+        .to_string()
+            + "\n"
     }
 
-
-    
     // USERNAME
 
-    fn handle_give_new_username(
-        &mut self,
-        sender: Token,
-        data: &Value,
-    ) -> io::Result<()> {
-
-        let username = data.get("username")
-            .and_then(Value::as_str)
-            .unwrap_or("");
+    fn handle_give_new_username(&mut self, sender: Token, data: &Value) -> io::Result<()> {
+        let username = data.get("username").and_then(Value::as_str).unwrap_or("");
 
         println!("Nouveau pseudo demandé : {}", username);
 
@@ -516,19 +421,14 @@ impl Server {
                 "is_username_available",
                 serde_json::json!({
                     "accept": true
-                })
-            )
+                }),
+            ),
         )
     }
 
-
     // LOBBIES
 
-    fn handle_list_available_lobbies(
-        &mut self,
-        sender: Token,
-    ) -> io::Result<()> {
-
+    fn handle_list_available_lobbies(&mut self, sender: Token) -> io::Result<()> {
         // recup les lobbies
 
         self.send_to_client(
@@ -537,21 +437,13 @@ impl Server {
                 "list_available_lobbies",
                 serde_json::json!({
                     "lobbies": []
-                })
-            )
+                }),
+            ),
         )
     }
 
-
-    fn handle_create_lobby(
-        &mut self,
-        sender: Token,
-        data: &Value,
-    ) -> io::Result<()> {
-
-        let name = data.get("name")
-            .and_then(Value::as_str)
-            .unwrap_or("");
+    fn handle_create_lobby(&mut self, sender: Token, data: &Value) -> io::Result<()> {
+        let name = data.get("name").and_then(Value::as_str).unwrap_or("");
 
         println!("Création du lobby : {}", name);
 
@@ -561,18 +453,12 @@ impl Server {
                 "created_lobby",
                 serde_json::json!({
                     "accept": true
-                })
-            )
+                }),
+            ),
         )
     }
 
-
-    fn handle_enter_lobby(
-        &mut self,
-        sender: Token,
-        _data: &Value,
-    ) -> io::Result<()> {
-
+    fn handle_enter_lobby(&mut self, sender: Token, _data: &Value) -> io::Result<()> {
         // rejoindre le lobby demandé
 
         self.send_to_client(
@@ -581,34 +467,21 @@ impl Server {
                 "enter_lobby",
                 serde_json::json!({
                     "accept": true
-                })
-            )
+                }),
+            ),
         )
     }
 
-
-    fn handle_quit_lobby(
-        &mut self,
-        sender: Token,
-    ) -> io::Result<()> {
-
+    fn handle_quit_lobby(&mut self, sender: Token) -> io::Result<()> {
         // retirer le joueur de son lobby
 
         self.send_to_client(
             sender,
-            &Self::make_response(
-                "quit_lobby",
-                serde_json::json!({})
-            )
+            &Self::make_response("quit_lobby", serde_json::json!({})),
         )
     }
 
-
-    fn handle_lobby_toujours_actif(
-        &mut self,
-        sender: Token,
-    ) -> io::Result<()> {
-
+    fn handle_lobby_toujours_actif(&mut self, sender: Token) -> io::Result<()> {
         // verifier si le lobby existe toujours
 
         self.send_to_client(
@@ -617,21 +490,16 @@ impl Server {
                 "list_available_lobbies",
                 serde_json::json!({
                     "accept": true
-                })
-            )
+                }),
+            ),
         )
     }
 
-
     // GAME
 
-    fn handle_start_game(
-        &mut self,
-        sender: Token,
-        data: &Value,
-    ) -> io::Result<()> {
-
-        let number_of_player = data.get("number_of_player")
+    fn handle_start_game(&mut self, sender: Token, data: &Value) -> io::Result<()> {
+        let number_of_player = data
+            .get("number_of_player")
             .and_then(Value::as_u64)
             .unwrap_or(0);
 
@@ -647,17 +515,12 @@ impl Server {
                 serde_json::json!({
                     "accept": true,
                     "color": "white"
-                })
-            )
+                }),
+            ),
         )
     }
 
-
-    fn handle_is_the_game_starting(
-        &mut self,
-        sender: Token,
-    ) -> io::Result<()> {
-
+    fn handle_is_the_game_starting(&mut self, sender: Token) -> io::Result<()> {
         // vérifier l'état de la partie
 
         self.send_to_client(
@@ -667,25 +530,17 @@ impl Server {
                 serde_json::json!({
                     "accept": false,
                     "color": ""
-                })
-            )
+                }),
+            ),
         )
     }
 
-
-    fn handle_quitted_game(
-        &mut self,
-        sender: Token,
-    ) -> io::Result<()> {
-
+    fn handle_quitted_game(&mut self, sender: Token) -> io::Result<()> {
         // gerer le départ du joueur
 
         self.send_to_client(
             sender,
-            &Self::make_response(
-                "game_quitted",
-                serde_json::json!({})
-            )
+            &Self::make_response("game_quitted", serde_json::json!({})),
         )
     }
 }
