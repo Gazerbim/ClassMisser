@@ -125,10 +125,8 @@ impl Server {
 
         if readable {
             let (messages, disconnected_read) = self.read_messages(token);
-
             disconnected = disconnected_read;
 
-            // Traitement des messages reçus
             // Traitement des messages reçus
             if !disconnected {
                 for message in messages {
@@ -166,6 +164,9 @@ impl Server {
         let mut messages = Vec::new();
         let mut disconnected = false;
 
+        for e in self.clients.list.keys() {
+            self.clients.list.get(&e).unwrap();
+        }
         if let Some(client) = self.clients.list.get_mut(&token) {
             let mut temp = [0u8; 4096];
 
@@ -186,6 +187,7 @@ impl Server {
                                 .trim_end_matches('\r')
                                 .to_string();
 
+                            println!("message = {}", &message);
                             messages.push(message);
                         }
                     }
@@ -253,6 +255,7 @@ impl Server {
     }
 
     fn update_client_interest(&mut self, token: Token) -> io::Result<()> {
+        // Mise à jour des événements Mio
         if let Some(client) = self.clients.list.get_mut(&token) {
             let interest = if client.sent < client.outgoing.len() {
                 Interest::READABLE.add(Interest::WRITABLE)
@@ -430,13 +433,12 @@ impl Server {
 
     fn handle_list_available_lobbies(&mut self, sender: Token) -> io::Result<()> {
         // recup les lobbies
-
         self.send_to_client(
             sender,
             &Self::make_response(
                 "list_available_lobbies",
                 serde_json::json!({
-                    "lobbies": []
+                    "lobbies": ["Elie", "Serguei"]
                 }),
             ),
         )
