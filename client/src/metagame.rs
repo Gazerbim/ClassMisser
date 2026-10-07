@@ -1,9 +1,11 @@
 use console_engine::ConsoleEngine;
+use serde_json::Value;
 
 use crate::chat::Chat;
 use crate::client::Client;
 use crate::game::Game;
 use crate::menus::home::Home;
+use crate::types::protocol::{LobbiesList, Response};
 use crate::types::states::State;
 
 use crate::menus::in_lobby::InLobby;
@@ -70,9 +72,26 @@ impl Metagame {
                 return true;
             } else if action == String::from("Rejoindre un salon") {
                 //get la liste des lobby disponibles
-                let lobby_name = self.client.request(&"test".to_string());
-                self.lobby_selector
-                    .set_elements_list(vec![String::from(lobby_name), String::from("Serguei")]);
+                let raw_response = self.client.request(
+                    &"{\"type\": \"lobbies\",\"header\": \"list_available_lobbies\"}\n".to_string(),
+                );
+                let response: Response = serde_json::from_str(&raw_response).unwrap();
+                let data_content: LobbiesList = serde_json::from_value(response.data).unwrap();
+                match data_content.lobbies.as_array() {
+                    Some(_v) => {
+                        let mut v: Vec<String> = Vec::new();
+                        for e in _v {
+                            match e.as_str() {
+                                Some(_s) => v.push(String::from(_s)),
+                                None => {}
+                            }
+                        }
+                        self.lobby_selector.set_elements_list(v);
+                    }
+                    None => self
+                        .lobby_selector
+                        .set_elements_list(vec![String::from("test1"), String::from("test2")]),
+                }
                 self.state = State::ChooseLobby;
             } else if action == "Créer un salon".to_string() {
                 //requête pour créer un salon
