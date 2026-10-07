@@ -76,8 +76,7 @@ impl Metagame {
                     &"{\"type\": \"lobbies\",\"header\": \"list_available_lobbies\"}\n".to_string(),
                 );
                 let response: Response = serde_json::from_str(&raw_response).unwrap();
-                let data_content: LobbiesList = serde_json::from_value(response.data).unwrap();
-                match data_content.lobbies.as_array() {
+                match response.data["lobbies"].as_array() {
                     Some(_v) => {
                         let mut v: Vec<String> = Vec::new();
                         for e in _v {
@@ -94,7 +93,6 @@ impl Metagame {
                 }
                 self.state = State::ChooseLobby;
             } else if action == "Créer un salon".to_string() {
-                //requête pour créer un salon
                 self.state = State::CreateLobby;
             }
         } else if self.state == State::EnterPseudo {
@@ -152,7 +150,13 @@ impl Metagame {
         } else if self.state == State::CreateLobby {
             let new_lobby_name = self.lobby_creator.update();
             if new_lobby_name != String::from("") {
-                //creer le lobby et le rejoindre
+                let mut req =
+                    "{\"type\": \"lobbies\",\"header\": \"create_lobby\", \"data\": {\"name\": \""
+                        .to_string();
+                req.push_str(&new_lobby_name);
+                req.push_str("\" }}\n");
+                self.client.request(&req);
+                //println!("{}", req);
                 self.in_lobby.set_name(new_lobby_name);
                 self.in_lobby.set_creator(true);
                 self.state = State::InLobby;

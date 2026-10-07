@@ -350,26 +350,24 @@ impl Server {
                 self.handle_give_new_username(sender, &request.data)?;
             }
 
-            ("lobbies", "list_available_lobbies") => {
-                self.handle_list_available_lobbies(sender)?;
+            ("lobbies", _) => {
+                //self.handle_list_available_lobbies(sender)?;
+                let response =
+                    self.lobbies
+                        .handle_request(sender, request.header.as_str(), &request.data);
+                self.send_to_client(sender, &response)?;
             }
-
-            ("lobbies", "create_lobby") => {
-                self.handle_create_lobby(sender, &request.data)?;
-            }
-
-            ("lobbies", "enter_lobby") => {
-                self.handle_enter_lobby(sender, &request.data)?;
-            }
-
-            ("lobbies", "quit_lobby") => {
-                self.handle_quit_lobby(sender)?;
-            }
-
-            ("lobbies", "lobby_toujours_actif") => {
-                self.handle_lobby_toujours_actif(sender)?;
-            }
-
+            //             ("lobbies", "enter_lobby") => {
+            //                 self.handle_enter_lobby(sender, &request.data)?;
+            //             }
+            //
+            //             ("lobbies", "quit_lobby") => {
+            //                 self.handle_quit_lobby(sender)?;
+            //             }
+            //
+            //             ("lobbies", "lobby_toujours_actif") => {
+            //                 self.handle_lobby_toujours_actif(sender)?;
+            //             }
             ("game", "start_game") => {
                 self.handle_start_game(sender, &request.data)?;
             }
@@ -388,13 +386,13 @@ impl Server {
                     request.request_type, request.header
                 );
 
-                self.send_to_client(
-                    sender,
-                    &Self::make_response(
-                        "error",
-                        serde_json::json!({"message": "Unknown request"}),
-                    ),
-                )?;
+                // self.send_to_client(
+                //     sender,
+                //     &Self::make_response(
+                //         "error",
+                //         serde_json::json!({"message": "Unknown request"}),
+                //     ),
+                // )?;
             }
         }
 
@@ -430,19 +428,6 @@ impl Server {
     }
 
     // LOBBIES
-
-    fn handle_list_available_lobbies(&mut self, sender: Token) -> io::Result<()> {
-        // recup les lobbies
-        self.send_to_client(
-            sender,
-            &Self::make_response(
-                "list_available_lobbies",
-                serde_json::json!({
-                    "lobbies": ["Elie", "Serguei"]
-                }),
-            ),
-        )
-    }
 
     fn handle_create_lobby(&mut self, sender: Token, data: &Value) -> io::Result<()> {
         let name = data.get("name").and_then(Value::as_str).unwrap_or("");
