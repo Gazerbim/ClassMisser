@@ -27,7 +27,7 @@ impl Lobbies {
             "list_available_lobbies" => {
                 let mut lobby_list: Vec<String> = Vec::new();
                 for l in &self.list {
-                    lobby_list.push(l.name.clone());
+                    lobby_list.push(l.name.clone()[1..(l.name.len() - 1)].to_string());
                 }
                 serde_json::json!({
                     "lobbies": lobby_list,
@@ -43,6 +43,25 @@ impl Lobbies {
                 serde_json::json!({
                     "accept": true,
                 })
+            }
+            "enter_lobby" => {
+                let mut added = false;
+                for l in self.list.iter_mut() {
+                    if l.name == data["name"].to_string() {
+                        let mut already_in = false;
+                        for p in l.list_players.iter_mut() {
+                            if *p == sender {
+                                already_in = true;
+                                break;
+                            }
+                        }
+                        if !already_in {
+                            l.list_players.push(sender);
+                            added = true;
+                        }
+                    }
+                }
+                serde_json::json!({"accept": added})
             }
             _ => serde_json::json!({}),
         };

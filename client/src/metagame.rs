@@ -120,6 +120,12 @@ impl Metagame {
             if nom_lobby != "".to_string() {
                 //demande connection au lobby
                 // si demande acceptée, on rentre dans le lobby
+                let mut req =
+                    "{\"type\": \"lobbies\",\"header\": \"enter_lobby\", \"data\": {\"name\": \""
+                        .to_string();
+                req.push_str(&nom_lobby);
+                req.push_str("\" }}\n");
+                self.client.request(&req);
                 self.state = State::InLobby;
                 self.in_lobby.set_creator(false);
                 self.in_lobby.set_name(nom_lobby);

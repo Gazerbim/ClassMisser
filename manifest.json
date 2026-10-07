@@ -36,7 +36,7 @@
 	"request": {
 		"type": "lobbies",
 		"header": "enter_lobby",
-		"data": "{}"
+		"data": "{name: String}"
 	},
 	"response": {
 		"type": "enter_lobby",
