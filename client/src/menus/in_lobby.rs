@@ -21,6 +21,10 @@ impl InLobby {
         self.name = new_name.clone();
     }
 
+    pub fn get_name(&self) -> String {
+        self.name.clone()
+    }
+
     pub fn set_creator(&mut self, privilage: bool) {
         self.creator = privilage;
     }

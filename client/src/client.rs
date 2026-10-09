@@ -1,4 +1,11 @@
-use std::{io::Read, io::Write, net::TcpStream};
+use std::{
+    io::{Read, Write},
+    net::TcpStream,
+};
+
+use serde_json::Value;
+
+use crate::types::protocol::Response;
 
 pub struct Client {
     stream: TcpStream,
@@ -31,7 +38,7 @@ impl Client {
             Err(ref e) if e.kind() == std::io::ErrorKind::WouldBlock => {
                 // wait until network socket is ready, typically implemented
                 // via platform-specific APIs such as epoll or IOCP
-                true
+                false
             }
             Err(_e) => false, //panic!("encountered IO error: {e}"),
         }
@@ -52,5 +59,22 @@ impl Client {
         } else {
             return String::from("");
         }
+    }
+
+    pub fn parse_response(&self, message: &str) -> Response {
+        //à améliorer, en POC pour l'instant
+        //println!("message reçu: {}", message);
+        let request: Response = match serde_json::from_str(message) {
+            Ok(response) => response,
+            Err(_e) => {
+                eprint!("message serveur non reconnu: {}", _e);
+                Response {
+                    request_type: String::from(""),
+                    header: String::from(""),
+                    data: Value::Bool(false),
+                }
+            }
+        };
+        request
     }
 }

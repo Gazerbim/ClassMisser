@@ -6,6 +6,8 @@ pub struct Response {
     #[serde(rename = "type")]
     pub request_type: String,
 
+    pub header: String,
+
     #[serde(default)]
     pub data: Value,
 }

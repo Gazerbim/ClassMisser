@@ -54,7 +54,6 @@ impl Metagame {
     pub fn main_loop(&mut self) {
         loop {
             self.engine.wait_frame(); // wait for next frame + capture inputs
-            self.engine.clear_screen(); // reset the screen
 
             if self.handling_events() {
                 break;
@@ -72,26 +71,11 @@ impl Metagame {
                 return true;
             } else if action == String::from("Rejoindre un salon") {
                 //get la liste des lobby disponibles
-                let raw_response = self.client.request(
+                if self.client.send(
                     &"{\"type\": \"lobbies\",\"header\": \"list_available_lobbies\"}\n".to_string(),
-                );
-                let response: Response = serde_json::from_str(&raw_response).unwrap();
-                match response.data["lobbies"].as_array() {
-                    Some(_v) => {
-                        let mut v: Vec<String> = Vec::new();
-                        for e in _v {
-                            match e.as_str() {
-                                Some(_s) => v.push(String::from(_s)),
-                                None => {}
-                            }
-                        }
-                        self.lobby_selector.set_elements_list(v);
-                    }
-                    None => self
-                        .lobby_selector
-                        .set_elements_list(vec![String::from("test1"), String::from("test2")]),
+                ) {
+                    self.state = State::ChooseLobby;
                 }
-                self.state = State::ChooseLobby;
             } else if action == "Créer un salon".to_string() {
                 self.state = State::CreateLobby;
             }
@@ -110,7 +94,14 @@ impl Metagame {
             self.in_lobby.handling_events(&self.engine);
             if self.engine.is_key_pressed(console_engine::KeyCode::Esc) {
                 //envoyer une requête pour quitter le lobby
-                self.state = State::Home;
+                let mut req =
+                    "{\"type\": \"lobbies\",\"header\": \"quit_lobby\", \"data\": { \"name\": \""
+                        .to_string();
+                req.push_str(&self.in_lobby.get_name());
+                req.push_str("\"}}\n");
+                if self.client.send(&req) {
+                    self.state = State::Home;
+                }
             }
         } else if self.state == State::ChooseLobby {
             if self.engine.is_key_pressed(console_engine::KeyCode::Esc) {
@@ -125,10 +116,7 @@ impl Metagame {
                         .to_string();
                 req.push_str(&nom_lobby);
                 req.push_str("\" }}\n");
-                self.client.request(&req);
-                self.state = State::InLobby;
-                self.in_lobby.set_creator(false);
-                self.in_lobby.set_name(nom_lobby);
+                if self.client.send(&req) {}
             }
         } else if self.state == State::InGame {
             if self.engine.is_key_pressed(console_engine::KeyCode::Esc) {
@@ -142,6 +130,7 @@ impl Metagame {
     }
 
     fn update(&mut self) {
+        self.read_server_responses();
         if self.state == State::Home {
             self.home.update();
             self.home_layout.update();
@@ -161,11 +150,7 @@ impl Metagame {
                         .to_string();
                 req.push_str(&new_lobby_name);
                 req.push_str("\" }}\n");
-                self.client.request(&req);
-                //println!("{}", req);
-                self.in_lobby.set_name(new_lobby_name);
-                self.in_lobby.set_creator(true);
-                self.state = State::InLobby;
+                self.client.send(&req);
             }
         } else if self.state == State::InLobby {
             if self.in_lobby.get_try_launch_game() {
@@ -180,6 +165,7 @@ impl Metagame {
     }
 
     fn display(&mut self) {
+        self.engine.clear_screen(); // reset the screen
         let left_third = ((self.engine.get_width() / 2) - 15) as i32;
         let top_left = (self.engine.get_height() / 4) as i32;
         if self.state == State::Home {
@@ -204,5 +190,51 @@ impl Metagame {
             self.chat.display();
         }
         self.engine.draw(); // draw the screen
+    }
+
+    fn read_server_responses(&mut self) {
+        let mut raw_response: String = String::from("");
+        if self.client.receive(&mut raw_response) {
+            if raw_response != String::from("") {
+                let response: Response = self.client.parse_response(&raw_response);
+                match response.request_type.as_str() {
+                    "lobbies" => match response.header.as_str() {
+                        "list_available_lobbies" => match response.data["lobbies"].as_array() {
+                            Some(_v) => {
+                                let mut v: Vec<String> = Vec::new();
+                                for e in _v {
+                                    match e.as_str() {
+                                        Some(_s) => v.push(String::from(_s)),
+                                        None => {}
+                                    }
+                                }
+                                self.lobby_selector.set_elements_list(v);
+                            }
+                            None => self.lobby_selector.set_elements_list(vec![]),
+                        },
+                        "enter_lobby" => match response.data["name"].as_str() {
+                            Some(_n) => {
+                                self.state = State::InLobby;
+                                self.in_lobby.set_creator(false);
+                                self.in_lobby.set_name(String::from(_n));
+                            }
+                            None => { //set le nom du lobby en rouge pour signifier une erreur
+                            }
+                        },
+                        "created_lobby" => match response.data["name"].as_str() {
+                            Some(_n) => {
+                                self.in_lobby.set_name(String::from(_n));
+                                self.in_lobby.set_creator(true);
+                                self.state = State::InLobby;
+                            }
+                            None => { //set le nom du lobby en rouge pour signifier une erreur
+                            }
+                        },
+                        _ => {}
+                    },
+                    _ => {}
+                }
+            }
+        }
     }
 }

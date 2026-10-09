@@ -6,7 +6,8 @@
 			"data": "{username: String}"
 		},
 		"response": {
-			"type": "is_username_available",
+		  "type": "username",
+			"header": "is_username_available",
 			"data": "{accept: bool}"
 		}
 	},
@@ -17,7 +18,8 @@
 			"data": "{}"
 		},
 		"response": {
-			"type": "list_available_lobbies",
+		  "type": "lobbies",
+			"header": "list_available_lobbies",
 			"data": "{lobbies: [String]}"
 		}
 	},
@@ -28,8 +30,9 @@
 			"data": "{name: String}"
 		},
 		"response": {
-			"type": "created_lobby",
-			"data": "{accept: bool}"
+		  "type": "lobbies",
+			"header": "created_lobby",
+			"data": "{name: String}"
 		}
 	},
  {
@@ -39,8 +42,9 @@
 		"data": "{name: String}"
 	},
 	"response": {
-		"type": "enter_lobby",
-		"data": "{accept: bool}"
+	  "type": "lobbies",
+		"header": "enter_lobby",
+		"data": "{name: String}"
 	}
 },
 {
@@ -50,7 +54,8 @@
 			"data": "{}"
 		},
 		"response": {
-			"type": "list_available_lobbies",
+		  "type": "lobbies",
+			"header": "list_available_lobbies",
 			"data": "{lobbies: []}"
 		}
 	},
@@ -58,10 +63,11 @@
 	"request": {
 		"type": "lobbies",
 		"header": "quit_lobby",
-		"data": "{}"
+		"data": "{name: String}"
 	},
 	"response": {
-		"type": "quit_lobby",
+	  "type": "lobbies",
+		"header": "quit_lobby",
 		"data": "{}"
 	}
 },
@@ -72,7 +78,8 @@
 			"data": "{}"
 		},
 		"response": {
-			"type": "list_available_lobbies",
+		  "type": "lobbies",
+			"header": "list_available_lobbies",
 			"data": "{accept: bool}"
 		}
 	},
@@ -83,7 +90,8 @@
 			"data": "{number_of_player: number}"
 		},
 		"response": {
-			"type": "game_is_starting",
+		  "type": "game",
+			"header": "game_is_starting",
 			"data": "{accept: bool, colot: String}"
 		}
 	},
@@ -94,7 +102,8 @@
 		"data": "{}"
 	},
 	"response": {
-		"type": "game_is_starting",
+	  "type": "game",
+		"header": "game_is_starting",
 		"data": "{lobbies: {accept: bool, color: String}}"
 	}
 },
@@ -105,7 +114,8 @@
 			"data": "{}"
 		},
 		"response": {
-			"type": "game_quitted",
+		  "type": "game",
+			"header": "game_quitted",
 			"data": "{}"
 		}
 	}

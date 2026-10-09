@@ -355,19 +355,10 @@ impl Server {
                 let response =
                     self.lobbies
                         .handle_request(sender, request.header.as_str(), &request.data);
-                self.send_to_client(sender, &response)?;
+                if response != String::from("") {
+                    self.send_to_client(sender, &response)?;
+                }
             }
-            //             ("lobbies", "enter_lobby") => {
-            //                 self.handle_enter_lobby(sender, &request.data)?;
-            //             }
-            //
-            //             ("lobbies", "quit_lobby") => {
-            //                 self.handle_quit_lobby(sender)?;
-            //             }
-            //
-            //             ("lobbies", "lobby_toujours_actif") => {
-            //                 self.handle_lobby_toujours_actif(sender)?;
-            //             }
             ("game", "start_game") => {
                 self.handle_start_game(sender, &request.data)?;
             }
