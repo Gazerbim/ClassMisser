@@ -198,43 +198,57 @@ impl Metagame {
             if raw_response != String::from("") {
                 let response: Response = self.client.parse_response(&raw_response);
                 match response.request_type.as_str() {
-                    "lobbies" => match response.header.as_str() {
-                        "list_available_lobbies" => match response.data["lobbies"].as_array() {
-                            Some(_v) => {
-                                let mut v: Vec<String> = Vec::new();
-                                for e in _v {
-                                    match e.as_str() {
-                                        Some(_s) => v.push(String::from(_s)),
-                                        None => {}
-                                    }
-                                }
-                                self.lobby_selector.set_elements_list(v);
-                            }
-                            None => self.lobby_selector.set_elements_list(vec![]),
-                        },
-                        "enter_lobby" => match response.data["name"].as_str() {
-                            Some(_n) => {
-                                self.state = State::InLobby;
-                                self.in_lobby.set_creator(false);
-                                self.in_lobby.set_name(String::from(_n));
-                            }
-                            None => { //set le nom du lobby en rouge pour signifier une erreur
-                            }
-                        },
-                        "created_lobby" => match response.data["name"].as_str() {
-                            Some(_n) => {
-                                self.in_lobby.set_name(String::from(_n));
-                                self.in_lobby.set_creator(true);
-                                self.state = State::InLobby;
-                            }
-                            None => { //set le nom du lobby en rouge pour signifier une erreur
-                            }
-                        },
-                        _ => {}
-                    },
+                    "lobbies" => self.read_lobby_server_response(response),
                     _ => {}
                 }
             }
+        }
+    }
+
+    fn read_lobby_server_response(&mut self, response: Response) {
+        match response.header.as_str() {
+            "list_available_lobbies" => match response.data["lobbies"].as_array() {
+                Some(_v) => {
+                    let mut v: Vec<String> = Vec::new();
+                    for e in _v {
+                        match e.as_str() {
+                            Some(_s) => v.push(String::from(_s)),
+                            None => {}
+                        }
+                    }
+                    self.lobby_selector.set_elements_list(v);
+                }
+                None => self.lobby_selector.set_elements_list(vec![]),
+            },
+            "enter_lobby" => match response.data["name"].as_str() {
+                Some(_n) => {
+                    self.state = State::InLobby;
+                    self.in_lobby.set_creator(false);
+                    self.in_lobby.set_name(String::from(_n));
+                }
+                None => { //set le nom du lobby en rouge pour signifier une erreur
+                }
+            },
+            "created_lobby" => match response.data["name"].as_str() {
+                Some(_n) => {
+                    self.in_lobby.set_name(String::from(_n));
+                    self.in_lobby.set_creator(true);
+                    self.state = State::InLobby;
+                }
+                None => { //set le nom du lobby en rouge pour signifier une erreur
+                }
+            },
+            "grant_ownership" => match response.data["name"].as_str() {
+                Some(_n) => {
+                    if self.in_lobby.get_name() == _n[1..(_n.len() - 1)].to_string() {
+                        self.in_lobby.set_creator(true);
+                    } else {
+                        //envoyer une erreur au serveur
+                    }
+                }
+                None => {}
+            },
+            _ => {}
         }
     }
 }

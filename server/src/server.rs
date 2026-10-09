@@ -352,11 +352,15 @@ impl Server {
 
             ("lobbies", _) => {
                 //self.handle_list_available_lobbies(sender)?;
-                let response =
-                    self.lobbies
-                        .handle_request(sender, request.header.as_str(), &request.data);
+                let mut receiver = sender.clone();
+                let response = self.lobbies.handle_request(
+                    sender,
+                    request.header.as_str(),
+                    &request.data,
+                    &mut receiver,
+                );
                 if response != String::from("") {
-                    self.send_to_client(sender, &response)?;
+                    self.send_to_client(receiver, &response)?;
                 }
             }
             ("game", "start_game") => {

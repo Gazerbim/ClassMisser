@@ -74,13 +74,13 @@
 {
 		"request": {
 			"type": "lobbies",
-			"header": "lobby_toujours_actif",
+			"header": "",
 			"data": "{}"
 		},
 		"response": {
 		  "type": "lobbies",
-			"header": "list_available_lobbies",
-			"data": "{accept: bool}"
+			"header": "grant_ownership",
+			"data": "{name: String}"
 		}
 	},
 {

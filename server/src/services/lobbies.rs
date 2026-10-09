@@ -22,7 +22,13 @@ impl Lobbies {
         self.list[lobby].list_players.push(token);
     }
 
-    pub fn handle_request(&mut self, sender: Token, header: &str, data: &Value) -> String {
+    pub fn handle_request(
+        &mut self,
+        sender: Token,
+        header: &str,
+        data: &Value,
+        receiver: &mut Token,
+    ) -> String {
         let mut response_header = "";
         let response_data: Value = match header {
             "list_available_lobbies" => {
@@ -72,12 +78,19 @@ impl Lobbies {
             }
             "quit_lobby" => {
                 let mut index = 0;
+                let mut data_value: Value = serde_json::json!({});
                 for l in self.list.iter_mut() {
                     if l.name == data["name"].to_string() {
                         let before_size = l.list_players.len();
                         for i in 0..l.list_players.len() {
                             if l.list_players[i] == sender {
                                 l.list_players.remove(i);
+                                if sender == l.owner && before_size > 1 {
+                                    l.owner = l.list_players[0];
+                                    data_value = serde_json::json!({"name": l.name.clone()});
+                                    response_header = "grant_ownership";
+                                    *receiver = l.owner.clone();
+                                }
                                 break;
                             }
                         }
@@ -90,7 +103,7 @@ impl Lobbies {
                     }
                     index += 1;
                 }
-                serde_json::json!({})
+                data_value
             }
             _ => serde_json::json!({}),
         };
