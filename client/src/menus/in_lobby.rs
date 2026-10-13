@@ -25,6 +25,10 @@ impl InLobby {
         self.name.clone()
     }
 
+    pub fn get_creator_privilage(&self) -> bool {
+        self.creator
+    }
+
     pub fn set_creator(&mut self, privilage: bool) {
         self.creator = privilage;
     }

@@ -301,7 +301,7 @@ impl Server {
         let tokens = self
             .lobbies
             .list
-            .get(lobby)
+            .get(&lobby)
             .ok_or_else(|| io::Error::new(io::ErrorKind::NotFound, "Lobby introuvable"))?
             .list_players
             .clone();
@@ -490,7 +490,7 @@ impl Server {
             lobby
         );
 
-        self.lobbies.list[lobby].in_game = true;
+        self.lobbies.list.get_mut(&lobby).unwrap().in_game = true;
 
         self.broadcast_to_lobby(
             lobby,

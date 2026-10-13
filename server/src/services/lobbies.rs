@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use mio::Token;
 use serde_json::Value::{self, Null};
 
@@ -18,16 +20,24 @@ impl Lobby{
 }
 
 pub struct Lobbies {
-    pub list: Vec<Lobby>,
+    pub list: HashMap<usize, Lobby>,
 }
 
 impl Lobbies {
     pub fn new() -> Lobbies {
-        Lobbies { list: Vec::new() }
+        Lobbies {
+            list: HashMap::new(),
+        }
     }
 
-    pub fn add_player(&mut self, token: Token, lobby: usize) {
-        self.list[lobby].list_players.push(token);
+    pub fn add_player(&mut self, token: Token, lobby: usize) -> bool {
+        match self.list.get_mut(&lobby) {
+            Some(_l) => {
+                _l.list_players.push(token);
+                true
+            }
+            None => false,
+        }
     }
 
 
@@ -42,16 +52,23 @@ impl Lobbies {
         let response_data: Value = match header {
             "list_available_lobbies" => {
                 let mut lobby_list: Vec<String> = Vec::new();
-                for l in &self.list {
-                    lobby_list.push(l.name.clone()[1..(l.name.len() - 1)].to_string());
+                for k in self.list.keys() {
+                    match self.list.get(k) {
+                        Some(l) => {
+                            lobby_list.push(l.name.clone()[1..(l.name.len() - 1)].to_string())
+                        }
+                        None => {}
+                    }
                 }
                 response_header = "list_available_lobbies";
                 serde_json::json!({
                     "lobbies": lobby_list,
                 })
             }
+
+            // TODO: A GENERER L'INDEX CAR POUR LINSTANT C'est 0 !!!!!!!!!!!!!!!!!!!!
             "create_lobby" => {
-                self.list.push(Lobby {
+                self.list.insert(0, Lobby {
                     name: data["name"].to_string(),
                     list_players: vec![sender],
                     in_game: false,
@@ -67,10 +84,10 @@ impl Lobbies {
             }
             "enter_lobby" => {
                 let mut added = String::from("");
-                for l in self.list.iter_mut() {
+                for l in self.list.values_mut() {
                     if l.name == data["name"].to_string() {
                         let mut already_in = false;
-                        for p in l.list_players.iter_mut() {
+                        for p in l.list_players.iter() {
                             if *p == sender {
                                 already_in = true;
                                 break;
@@ -87,9 +104,9 @@ impl Lobbies {
                 serde_json::json!({"name": added})
             }
             "quit_lobby" => {
-                let mut index = 0;
+                let mut index: usize = 0;
                 let mut data_value: Value = serde_json::json!({});
-                for l in self.list.iter_mut() {
+                for l in self.list.values_mut() {
                     if l.name == data["name"].to_string() {
                         let before_size = l.list_players.len();
                         for i in 0..l.list_players.len() {
@@ -106,20 +123,18 @@ impl Lobbies {
                         }
                         if before_size != l.list_players.len() {
                             if l.list_players.len() == 0 {
-                                self.list.remove(index);
+                                self.list.remove(&index);
                             }
                             break;
                         }
                     }
                     index += 1;
                 }
+
                 data_value
             }
             _ => serde_json::json!({}),
         };
-        for l in self.list.iter_mut() {
-            println!("Lobby name: {}, size: {}", l.name, l.list_players.len());
-        }
         if response_data == serde_json::json!({}) {
             return String::from("");
         }
