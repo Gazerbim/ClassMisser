@@ -29,12 +29,14 @@ impl Lobby {
 
 pub struct Lobbies {
     pub list: HashMap<usize, Lobby>,
+    pub availables_ids_for_lobby: Vec<usize>,
 }
 
 impl Lobbies {
     pub fn new() -> Lobbies {
         Lobbies {
             list: HashMap::new(),
+            availables_ids_for_lobby: Vec::new(),
         }
     }
 
@@ -55,6 +57,19 @@ impl Lobbies {
             }
         }
         -1
+    }
+
+    pub fn delete_lobby_by_name(&mut self, name: String) {
+        let to_remove: Vec<usize> = self
+            .list
+            .keys()
+            .filter(|k| self.list.get(k).unwrap().name == name)
+            .cloned()
+            .collect();
+        self.availables_ids_for_lobby.extend(&to_remove);
+        for k in to_remove {
+            self.list.remove(&k);
+        }
     }
 
     pub fn handle_request(
@@ -83,8 +98,13 @@ impl Lobbies {
             }
 
             "create_lobby" => {
+                let mut new_id = self.list.len();
+                if self.availables_ids_for_lobby.len() > 0 {
+                    new_id = self.availables_ids_for_lobby[0];
+                    self.availables_ids_for_lobby.remove(0);
+                }
                 self.list.insert(
-                    self.list.len(),
+                    new_id,
                     Lobby {
                         name: data["name"].to_string(),
                         list_players: vec![sender],
@@ -122,8 +142,8 @@ impl Lobbies {
                 serde_json::json!({"name": added})
             }
             "quit_lobby" => {
-                let mut index: usize = 0;
                 let mut data_value: Value = serde_json::json!({});
+                let mut lobby_name_to_delete = "".to_string();
                 for l in self.list.values_mut() {
                     if l.name == data["name"].to_string() {
                         let before_size = l.list_players.len();
@@ -141,14 +161,13 @@ impl Lobbies {
                         }
                         if before_size != l.list_players.len() {
                             if l.list_players.len() == 0 {
-                                self.list.remove(&index);
+                                lobby_name_to_delete = l.name.clone();
                             }
                             break;
                         }
                     }
-                    index += 1;
                 }
-
+                self.delete_lobby_by_name(lobby_name_to_delete);
                 data_value
             }
             _ => serde_json::json!({}),
