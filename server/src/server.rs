@@ -298,7 +298,7 @@ impl Server {
         let tokens = self
             .lobbies
             .list
-            .get(lobby)
+            .get(&lobby)
             .ok_or_else(|| io::Error::new(io::ErrorKind::NotFound, "Lobby introuvable"))?
             .list_players
             .clone();
