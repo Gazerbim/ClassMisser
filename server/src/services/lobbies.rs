@@ -1,21 +1,29 @@
 use std::collections::HashMap;
 
 use mio::Token;
-use serde_json::Value::{self, Null};
+use serde_json::Value;
 
-use crate::services::players;
 use crate::services::game::Game;
 pub struct Lobby {
     pub name: String,
     pub list_players: Vec<Token>,
     pub in_game: bool,
     pub owner: Token,
-    pub game: Option<Game>
+    pub game: Option<Game>,
 }
 
-impl Lobby{
-    pub fn start_game(&mut self){
+impl Lobby {
+    pub fn start_game(&mut self) {
         self.game = Some(Game::new());
+    }
+
+    pub fn is_player_in_game(&self, target: Token) -> bool {
+        for p in self.list_players.iter() {
+            if *p == target {
+                return true;
+            }
+        }
+        false
     }
 }
 
@@ -40,6 +48,14 @@ impl Lobbies {
         }
     }
 
+    pub fn get_player_lobby_id(&self, player: Token) -> i32 {
+        for i in 0..self.list.len() {
+            if self.list[&i].is_player_in_game(player) {
+                return i as i32;
+            }
+        }
+        -1
+    }
 
     pub fn handle_request(
         &mut self,
@@ -66,15 +82,17 @@ impl Lobbies {
                 })
             }
 
-            // TODO: A GENERER L'INDEX CAR POUR LINSTANT C'est 0 !!!!!!!!!!!!!!!!!!!!
             "create_lobby" => {
-                self.list.insert(0, Lobby {
-                    name: data["name"].to_string(),
-                    list_players: vec![sender],
-                    in_game: false,
-                    owner: sender,
-                    game: None
-                });
+                self.list.insert(
+                    self.list.len(),
+                    Lobby {
+                        name: data["name"].to_string(),
+                        list_players: vec![sender],
+                        in_game: false,
+                        owner: sender,
+                        game: None,
+                    },
+                );
                 response_header = "created_lobby";
 
                 let name = data["name"].to_string();

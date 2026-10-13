@@ -7,7 +7,7 @@ use std::net::SocketAddr;
 
 use crate::services::clients::{Client, Clients};
 use crate::services::lobbies::Lobbies;
-use crate::services::players::Players;
+use crate::services::players::{Player, Players};
 use crate::services::protocol::Request;
 
 const SERVER: Token = Token(0);
@@ -29,7 +29,7 @@ impl Server {
             lobbies: Lobbies::new(),
             clients: Clients::new(),
             poll: Poll::new().unwrap(),
-            players: Players::new()
+            players: Players::new(),
         }
     }
 
@@ -320,7 +320,11 @@ impl Server {
 
                 return self.send_to_client(
                     sender,
-                    &Self::make_response("error", serde_json::json!({"message": "Invalid JSON"})),
+                    &Self::make_response(
+                        "error",
+                        "error",
+                        serde_json::json!({"message": "Invalid JSON"}),
+                    ),
                 );
             }
         };
@@ -336,6 +340,7 @@ impl Server {
                 return self.send_to_client(
                     sender,
                     &Self::make_response(
+                        "error",
                         "error",
                         serde_json::json!({"message": "Invalid request"}),
                     ),
@@ -354,7 +359,6 @@ impl Server {
             }
 
             ("lobbies", _) => {
-                //self.handle_list_available_lobbies(sender)?;
                 let mut receiver = sender.clone();
                 let response = self.lobbies.handle_request(
                     sender,
@@ -398,9 +402,10 @@ impl Server {
     }
 
     // pour construire les réponses JSON
-    fn make_response(response_type: &str, data: Value) -> String {
+    fn make_response(response_type: &str, response_header: &str, data: Value) -> String {
         serde_json::json!({
             "type": response_type,
+            "header": response_header,
             "data": data
         })
         .to_string()
@@ -414,67 +419,17 @@ impl Server {
 
         println!("Nouveau pseudo demandé : {}", username);
 
+        let accepted = self
+            .players
+            .add_player(sender, Player::new(String::from(username)));
+
         self.send_to_client(
             sender,
             &Self::make_response(
+                "username",
                 "is_username_available",
                 serde_json::json!({
-                    "accept": true
-                }),
-            ),
-        )
-    }
-
-    // LOBBIES
-
-    fn handle_create_lobby(&mut self, sender: Token, data: &Value) -> io::Result<()> {
-        let name = data.get("name").and_then(Value::as_str).unwrap_or("");
-
-        println!("Création du lobby : {}", name);
-
-        self.send_to_client(
-            sender,
-            &Self::make_response(
-                "created_lobby",
-                serde_json::json!({
-                    "accept": true
-                }),
-            ),
-        )
-    }
-
-    fn handle_enter_lobby(&mut self, sender: Token, _data: &Value) -> io::Result<()> {
-        // rejoindre le lobby demandé
-
-        self.send_to_client(
-            sender,
-            &Self::make_response(
-                "enter_lobby",
-                serde_json::json!({
-                    "accept": true
-                }),
-            ),
-        )
-    }
-
-    fn handle_quit_lobby(&mut self, sender: Token) -> io::Result<()> {
-        // retirer le joueur de son lobby
-
-        self.send_to_client(
-            sender,
-            &Self::make_response("quit_lobby", serde_json::json!({})),
-        )
-    }
-
-    fn handle_lobby_toujours_actif(&mut self, sender: Token) -> io::Result<()> {
-        // verifier si le lobby existe toujours
-
-        self.send_to_client(
-            sender,
-            &Self::make_response(
-                "list_available_lobbies",
-                serde_json::json!({
-                    "accept": true
+                    "accept": accepted
                 }),
             ),
         )
@@ -483,25 +438,37 @@ impl Server {
     // GAME
 
     fn handle_start_game(&mut self, sender: Token) -> io::Result<()> {
-        let lobby: usize = self.players.get_player(sender).unwrap().lobby.unwrap();
+        // let player = self.players.get_player(sender).unwrap();
+        // let lobby: usize = player.lobby.unwrap();
+        let id = self.lobbies.get_player_lobby_id(sender);
+        if id != -1 {
+            let lobby = id as usize;
 
-        println!(
-            "Demande de lancement de partie pour le lobby {}",
-            lobby
-        );
+            self.lobbies.list.get_mut(&lobby).unwrap().in_game = true;
 
-        self.lobbies.list.get_mut(&lobby).unwrap().in_game = true;
-
-        self.broadcast_to_lobby(
-            lobby,
-            &Self::make_response(
-                "game_is_starting",
-                serde_json::json!({
-                    "accept": true,
-                    "color": "white"
-                }),
-            ),
-        )
+            self.broadcast_to_lobby(
+                lobby,
+                &Self::make_response(
+                    "game",
+                    "game_is_starting",
+                    serde_json::json!({
+                        "accept": true,
+                        "color": "white"
+                    }),
+                ),
+            )
+        } else {
+            self.send_to_client(
+                sender,
+                &Self::make_response(
+                    "game",
+                    "game_is_starting",
+                    serde_json::json!({
+                        "accept": false
+                    }),
+                ),
+            )
+        }
     }
 
     fn handle_is_the_game_starting(&mut self, sender: Token) -> io::Result<()> {
@@ -510,6 +477,7 @@ impl Server {
         self.send_to_client(
             sender,
             &Self::make_response(
+                "game",
                 "game_is_starting",
                 serde_json::json!({
                     "accept": false,
@@ -524,7 +492,7 @@ impl Server {
 
         self.send_to_client(
             sender,
-            &Self::make_response("game_quitted", serde_json::json!({})),
+            &Self::make_response("game", "game_quitted", serde_json::json!({})),
         )
     }
 }

@@ -138,7 +138,12 @@ impl Metagame {
             self.username = self.enter_username.update();
             if self.username != String::from("") {
                 //envoyer au serveur le pseudo
-                self.state = State::Home;
+                let mut req = "{\"type\": \"username\",\"header\": \"give_new_username\", \"data\": {\"username\": \""
+                    .to_string();
+                req.push_str(&self.username);
+                req.push_str("\" }}\n");
+                self.client.send(&req);
+                //self.state = State::Home;
             }
         } else if self.state == State::ChooseLobby {
             self.lobby_selector.update();
@@ -155,8 +160,9 @@ impl Metagame {
         } else if self.state == State::InLobby {
             if self.in_lobby.get_try_launch_game() && self.in_lobby.get_creator_privilage() {
                 //lancer la partie avec une requête
-                let req =
-                    String::from("{\"type\": \"game\",\"header\": \"start_game\", \"data\": {}");
+                let req = String::from(
+                    "{\"type\": \"game\", \"header\": \"start_game\", \"data\": {}}\n",
+                );
                 self.client.send(&req);
             }
             self.in_lobby.update();
@@ -200,11 +206,29 @@ impl Metagame {
             if raw_response != String::from("") {
                 let response: Response = self.client.parse_response(&raw_response);
                 match response.request_type.as_str() {
+                    "username" => self.read_username_server_response(response),
                     "lobbies" => self.read_lobby_server_response(response),
-                    "game" => self.read_lobby_server_response(response),
+                    "game" => self.read_game_server_response(response),
                     _ => {}
                 }
             }
+        }
+    }
+
+    fn read_username_server_response(&mut self, response: Response) {
+        match response.header.as_str() {
+            "is_username_available" => {
+                let accepted = match response.data["accept"].as_bool() {
+                    Some(_c) => _c,
+                    None => false,
+                };
+                if accepted {
+                    self.state = State::Home;
+                } else {
+                    // gérer la situation où le pseudo n'est pas encore dispo
+                }
+            }
+            _ => {}
         }
     }
 
