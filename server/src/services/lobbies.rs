@@ -85,6 +85,17 @@ impl Lobbies {
             }
 
             "create_lobby" => {
+                //check if the name is already taken
+                if self.get_lobby_id_by_name(data["name"].to_string()).is_some() {
+                    response_header = "error";
+                    return serde_json::json!({
+                        "type": "lobbies",
+                        "header": response_header,
+                        "data": serde_json::json!({"message": "Lobby name already taken"}),
+                    })
+                    .to_string()
+                        + "\n";
+                }
                 let mut new_id = self.list.len();
                 if self.availables_ids_for_lobby.len() > 0 {
                     new_id = self.availables_ids_for_lobby[0];
