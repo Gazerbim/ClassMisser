@@ -153,9 +153,11 @@ impl Metagame {
                 self.client.send(&req);
             }
         } else if self.state == State::InLobby {
-            if self.in_lobby.get_try_launch_game() {
+            if self.in_lobby.get_try_launch_game() && self.in_lobby.get_creator_privilage() {
                 //lancer la partie avec une requête
-                self.state = State::InGame;
+                let req =
+                    String::from("{\"type\": \"game\",\"header\": \"start_game\", \"data\": {}");
+                self.client.send(&req);
             }
             self.in_lobby.update();
         } else if self.state == State::InGame {
@@ -199,6 +201,7 @@ impl Metagame {
                 let response: Response = self.client.parse_response(&raw_response);
                 match response.request_type.as_str() {
                     "lobbies" => self.read_lobby_server_response(response),
+                    "game" => self.read_lobby_server_response(response),
                     _ => {}
                 }
             }
@@ -248,6 +251,20 @@ impl Metagame {
                 }
                 None => {}
             },
+            _ => {}
+        }
+    }
+
+    fn read_game_server_response(&mut self, response: Response) {
+        match response.header.as_str() {
+            "game_is_starting" => {
+                let new_color = match response.data["color"].as_i64() {
+                    Some(_c) => _c,
+                    None => -1,
+                };
+                self.game.set_color(new_color as i32);
+                self.state = State::InGame
+            }
             _ => {}
         }
     }
