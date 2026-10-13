@@ -7,6 +7,7 @@ use std::net::SocketAddr;
 
 use crate::services::clients::{Client, Clients};
 use crate::services::lobbies::Lobbies;
+use crate::services::players::Players;
 use crate::services::protocol::Request;
 
 const SERVER: Token = Token(0);
@@ -17,6 +18,7 @@ pub struct Server {
     lobbies: Lobbies,
     clients: Clients,
     poll: Poll,
+    players: Players,
 }
 
 impl Server {
@@ -27,6 +29,7 @@ impl Server {
             lobbies: Lobbies::new(),
             clients: Clients::new(),
             poll: Poll::new().unwrap(),
+            players: Players::new()
         }
     }
 
@@ -364,7 +367,7 @@ impl Server {
                 }
             }
             ("game", "start_game") => {
-                self.handle_start_game(sender, &request.data)?;
+                self.handle_start_game(sender)?;
             }
 
             ("game", "is_the_game_starting") => {
@@ -479,19 +482,18 @@ impl Server {
 
     // GAME
 
-    fn handle_start_game(&mut self, sender: Token, data: &Value) -> io::Result<()> {
-        let number_of_player = data
-            .get("number_of_player")
-            .and_then(Value::as_u64)
-            .unwrap_or(0);
+    fn handle_start_game(&mut self, sender: Token) -> io::Result<()> {
+        let lobby: usize = self.players.get_player(sender).unwrap().lobby.unwrap();
 
         println!(
-            "Demande de lancement de partie avec {} joueurs",
-            number_of_player
+            "Demande de lancement de partie pour le lobby {}",
+            lobby
         );
 
-        self.send_to_client(
-            sender,
+        self.lobbies.list[lobby].in_game = true;
+
+        self.broadcast_to_lobby(
+            lobby,
             &Self::make_response(
                 "game_is_starting",
                 serde_json::json!({

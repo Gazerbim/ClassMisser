@@ -87,7 +87,7 @@
 		"request": {
 			"type": "game",
 			"header": "start_game",
-			"data": "{number_of_player: number}"
+			"data": "{}"
 		},
 		"response": {
 		  "type": "game",

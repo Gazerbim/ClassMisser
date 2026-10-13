@@ -3,7 +3,7 @@ use std::{collections::HashMap};
 
 pub struct Player{
     pseudo: String,
-    lobby: Option<usize>,
+    pub lobby: Option<usize>,
 }
 
 impl Player{

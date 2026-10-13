@@ -1,12 +1,20 @@
 use mio::Token;
-use serde_json::Value;
+use serde_json::Value::{self, Null};
 
 use crate::services::players;
+use crate::services::game::Game;
 pub struct Lobby {
     pub name: String,
     pub list_players: Vec<Token>,
     pub in_game: bool,
     pub owner: Token,
+    pub game: Option<Game>
+}
+
+impl Lobby{
+    pub fn start_game(&mut self){
+        self.game = Some(Game::new());
+    }
 }
 
 pub struct Lobbies {
@@ -21,6 +29,7 @@ impl Lobbies {
     pub fn add_player(&mut self, token: Token, lobby: usize) {
         self.list[lobby].list_players.push(token);
     }
+
 
     pub fn handle_request(
         &mut self,
@@ -47,6 +56,7 @@ impl Lobbies {
                     list_players: vec![sender],
                     in_game: false,
                     owner: sender,
+                    game: None
                 });
                 response_header = "created_lobby";
 

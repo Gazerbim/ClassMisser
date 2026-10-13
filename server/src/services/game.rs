@@ -178,13 +178,13 @@ impl Board{
 
 }
 
-struct Game{
+pub struct Game{
     pub board: Board,
     pub pieces: Pieces
 }
 
 impl Game{
-    fn new()->Game{
+    pub fn new()->Game{
         Game{board:Board::new(), pieces:Pieces::load_pieces()}
     }
 }
