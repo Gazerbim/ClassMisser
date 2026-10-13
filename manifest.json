@@ -87,12 +87,12 @@
 		"request": {
 			"type": "game",
 			"header": "start_game",
-			"data": "{}"
+			"data": "{players: usize}"
 		},
 		"response": {
 		  "type": "game",
 			"header": "game_is_starting",
-			"data": "{accept: bool, colot: String}"
+			"data": "{ color: String}"
 		}
 	},
  {

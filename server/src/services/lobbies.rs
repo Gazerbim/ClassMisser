@@ -3,29 +3,7 @@ use std::collections::HashMap;
 use mio::Token;
 use serde_json::Value;
 
-use crate::services::game::Game;
-pub struct Lobby {
-    pub name: String,
-    pub list_players: Vec<Token>,
-    pub in_game: bool,
-    pub owner: Token,
-    pub game: Option<Game>,
-}
-
-impl Lobby {
-    pub fn start_game(&mut self) {
-        self.game = Some(Game::new());
-    }
-
-    pub fn is_player_in_game(&self, target: Token) -> bool {
-        for p in self.list_players.iter() {
-            if *p == target {
-                return true;
-            }
-        }
-        false
-    }
-}
+use crate::services::lobby::Lobby;
 
 pub struct Lobbies {
     pub list: HashMap<usize, Lobby>,
@@ -57,6 +35,15 @@ impl Lobbies {
             }
         }
         -1
+    }
+
+    pub fn get_lobby_id_by_name(&mut self, name: String) -> Option<usize> {
+        for k in self.list.keys() {
+            if self.list.get(k).unwrap().name == name {
+                return Some(k.clone());
+            }
+        }
+        None
     }
 
     pub fn delete_lobby_by_name(&mut self, name: String) {
@@ -111,6 +98,7 @@ impl Lobbies {
                         in_game: false,
                         owner: sender,
                         game: None,
+                        number_of_players: 0,
                     },
                 );
                 response_header = "created_lobby";

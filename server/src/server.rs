@@ -371,15 +371,23 @@ impl Server {
                 }
             }
             ("game", "start_game") => {
-                self.handle_start_game(sender)?;
+                self.handle_start_game(sender, &request.data)?;
             }
 
-            ("game", "is_the_game_starting") => {
-                self.handle_is_the_game_starting(sender)?;
-            }
-
-            ("game", "quitted_game") => {
-                self.handle_quitted_game(sender)?;
+            ("game", _) => {
+                let lobby_name = request.data["lobby_name"].as_str().unwrap().to_string();
+                match self.lobbies.get_lobby_id_by_name(lobby_name) {
+                    Some(id) => {
+                        let l = self.lobbies.list.get_mut(&id).unwrap();
+                        let response =
+                            l.handle_request(sender, request.header.as_str(), &request.data);
+                        if response != "".to_string() {
+                            //à priori, dans la pertie, tous les messages sont en broadcast je dirais
+                            self.broadcast_to_lobby(id, response.as_str()).unwrap();
+                        }
+                    }
+                    None => {}
+                }
             }
 
             _ => {
@@ -437,17 +445,23 @@ impl Server {
 
     // GAME
 
-    fn handle_start_game(&mut self, sender: Token) -> io::Result<()> {
+    fn handle_start_game(&mut self, sender: Token, data: &Value) -> io::Result<()> {
         // let player = self.players.get_player(sender).unwrap();
         // let lobby: usize = player.lobby.unwrap();
-        let id = self.lobbies.get_player_lobby_id(sender);
+        let n = data["players"].as_i64().unwrap();
+        let mut id = -1;
+        if n > 1 && n < 5 {
+            id = self.lobbies.get_player_lobby_id(sender);
+        }
         if id != -1 {
-            let lobby = id as usize;
+            let id = id as usize;
 
-            self.lobbies.list.get_mut(&lobby).unwrap().in_game = true;
+            let lobby = self.lobbies.list.get_mut(&id).unwrap();
+            lobby.in_game = true;
+            lobby.number_of_players = n as usize;
 
             self.broadcast_to_lobby(
-                lobby,
+                id,
                 &Self::make_response(
                     "game",
                     "game_is_starting",

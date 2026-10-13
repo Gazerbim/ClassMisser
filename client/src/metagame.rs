@@ -160,9 +160,11 @@ impl Metagame {
         } else if self.state == State::InLobby {
             if self.in_lobby.get_try_launch_game() && self.in_lobby.get_creator_privilage() {
                 //lancer la partie avec une requête
-                let req = String::from(
-                    "{\"type\": \"game\", \"header\": \"start_game\", \"data\": {}}\n",
+                let mut req = String::from(
+                    "{\"type\": \"game\", \"header\": \"start_game\", \"data\": { \"players\": ",
                 );
+                req.push_str(&self.in_lobby.get_player_number().to_string());
+                req.push_str(" }}\n");
                 self.client.send(&req);
             }
             self.in_lobby.update();

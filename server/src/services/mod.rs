@@ -1,5 +1,6 @@
-pub mod lobbies;
-pub mod players;
 pub mod clients;
-pub mod protocol;
 pub mod game;
+pub mod lobbies;
+pub mod lobby;
+pub mod players;
+pub mod protocol;
