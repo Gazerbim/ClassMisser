@@ -17,6 +17,10 @@ impl Lobby {
         self.game = Some(Game::new());
     }
 
+    pub fn get_number_players_in_lobby(&self) -> usize {
+        self.list_players.len()
+    }
+
     pub fn is_player_in_game(&self, target: Token) -> bool {
         for p in self.list_players.iter() {
             if *p == target {
@@ -24,6 +28,15 @@ impl Lobby {
             }
         }
         false
+    }
+
+    pub fn remove_player(&mut self, player_token: &Token) {
+        for i in 0..self.list_players.len() {
+            if self.list_players[i] == *player_token {
+                self.list_players.remove(i);
+                break;
+            }
+        }
     }
 
     pub fn handle_request(&mut self, sender: Token, header: &str, data: &Value) -> String {

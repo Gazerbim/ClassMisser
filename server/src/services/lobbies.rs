@@ -46,6 +46,28 @@ impl Lobbies {
         None
     }
 
+    pub fn player_disconnection(&mut self, player_token: &Token) {
+        let affected_lobbies: Vec<usize> = self
+            .list
+            .keys()
+            .filter(|k| self.list.get(k).unwrap().is_player_in_game(*player_token))
+            .cloned()
+            .collect();
+        let mut empty_lobbies: Vec<String> = Vec::new();
+        for k in affected_lobbies {
+            let lobby = self.list.get_mut(&k).unwrap();
+            lobby.remove_player(player_token);
+            if lobby.get_number_players_in_lobby() == 0 {
+                empty_lobbies.push(lobby.name.clone());
+            } else if lobby.owner == *player_token {
+                lobby.owner = lobby.list_players[0];
+            }
+        }
+        for n in empty_lobbies {
+            self.delete_lobby_by_name(n);
+        }
+    }
+
     pub fn delete_lobby_by_name(&mut self, name: String) {
         let to_remove: Vec<usize> = self
             .list
@@ -86,7 +108,10 @@ impl Lobbies {
 
             "create_lobby" => {
                 //check if the name is already taken
-                if self.get_lobby_id_by_name(data["name"].to_string()).is_some() {
+                if self
+                    .get_lobby_id_by_name(data["name"].to_string())
+                    .is_some()
+                {
                     response_header = "error";
                     return serde_json::json!({
                         "type": "lobbies",

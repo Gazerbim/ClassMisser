@@ -110,7 +110,7 @@ impl Server {
     fn disconnect_client(&mut self, token: Token) {
         if let Some(mut client) = self.clients.list.remove(&token) {
             let _ = self.poll.registry().deregister(&mut client.socket);
-
+            self.lobbies.player_disconnection(&token);
             println!("Client {:?} déconnecté", token);
         }
     }
