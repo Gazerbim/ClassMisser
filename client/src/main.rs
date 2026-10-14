@@ -3,6 +3,7 @@ pub mod client;
 pub mod game;
 pub mod menus;
 mod metagame;
+pub mod services;
 pub mod types;
 
 use crate::metagame::Metagame;

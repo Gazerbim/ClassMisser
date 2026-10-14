@@ -1,0 +1,90 @@
+[
+    {
+        "name": "pion",
+        "index": 1,
+        "moves": [
+            { "x": 1, "y": 0 },
+            { "x": 0, "y": 1 },
+            { "x": 0, "y": -1 },
+            { "x": -1, "y": 0 }
+        ],
+        "extendable":false,
+        "cost":2,
+        "label":"♙",
+        "eating_moves": [
+            { "x": 1, "y": 1},
+            { "x": 1, "y": -1},
+            { "x": -1, "y": 1},
+            { "x": -1, "y": -1}
+        ],
+        "team":0
+    },
+    {
+        "name": "tour",
+        "index": 2,
+        "moves": [
+            { "x": 1, "y": 0 },
+            { "x": 0, "y": 1 },
+            { "x": 0, "y": -1 },
+            { "x": -1, "y": 0 }
+        ],
+        "extendable":true,
+        "cost":5,
+        "label":"♖",
+        "eating_moves": [],
+        "team":0
+    },
+    {
+        "name": "fou",
+        "index": 3,
+        "moves": [
+            { "x": 1, "y": 1 },
+            { "x": -1, "y": 1 },
+            { "x": 1, "y": -1 },
+            { "x": -1, "y": -1 }
+        ],
+        "extendable":true,
+        "cost":3,
+        "label":"♗",
+        "eating_moves": [],
+        "team":0
+    },
+    {
+        "name": "cavalier",
+        "index": 4,
+        "moves": [
+            { "x": 2, "y": 1 },
+            { "x": 1, "y": 2 },
+            { "x": -1, "y": 2},
+            { "x": 2, "y": -1 },
+            { "x": -2, "y": 1 },
+            { "x": 1, "y": -2 },
+            { "x": -1, "y": -2},
+            { "x": -2, "y": -1 }
+        ],
+        "extendable":false,
+        "cost":3,
+        "label":"♘",
+        "eating_moves": [],
+        "team":0
+    },
+    {
+        "name": "dame",
+        "index": 5,
+        "moves": [
+            { "x": 1, "y": 1 },
+            { "x": -1, "y": 1 },
+            { "x": 1, "y": -1 },
+            { "x": -1, "y": -1 },
+            { "x": 1, "y": 0 },
+            { "x": 0, "y": 1 },
+            { "x": 0, "y": -1 },
+            { "x": -1, "y": 0 }
+        ],
+        "extendable":true,
+        "cost":9,
+        "label":"♕",
+        "eating_moves": [],
+        "team":0
+    }
+]

@@ -288,7 +288,7 @@ impl Metagame {
                     Some(_c) => _c,
                     None => -1,
                 };
-                self.game.set_color(new_color as i32);
+                self.game.init_game(new_color as i32, 9, 4);
                 self.state = State::InGame
             }
             _ => {}
