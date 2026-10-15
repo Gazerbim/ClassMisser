@@ -7,18 +7,28 @@ use serde_json::Value;
 
 use crate::types::protocol::Response;
 
+
 pub struct Client {
     stream: TcpStream,
+    receive_buffer: Vec<u8>,
 }
 
+
 impl Client {
+    
     pub fn new(host: &String) -> Client {
         let stream = TcpStream::connect(host).unwrap();
+    
         stream
             .set_nonblocking(true)
             .expect("set_nonblocking call failed");
-        Client { stream: stream }
+    
+        Client {
+            stream,
+            receive_buffer: Vec::new(),
+        }
     }
+
 
     pub fn send(&mut self, message: &String) -> bool {
         match self.stream.write_all(message.as_bytes()) {
@@ -27,39 +37,134 @@ impl Client {
         }
     }
 
-    pub fn receive(&mut self, message: &mut String) -> bool {
-        let mut buffer = [0; 98];
-        match self.stream.read(&mut buffer) {
-            Ok(_size) => {
-                let new_message = String::from_utf8_lossy(&buffer[.._size]).into_owned();
-                *message = new_message;
-                true
+    
+    
+    pub fn receive(&mut self) -> Option<String> {
+        // Vérifier si un message complet est déjà en mémoire
+        if let Some(pos) = self.receive_buffer.iter().position(|&b| b == b'\n') {
+            let mut line: Vec<u8> = self.receive_buffer.drain(..=pos).collect();
+    
+            // Retirer le '\n'
+            line.pop();
+    
+            // Retirer le '\r' éventuel
+            if line.last() == Some(&b'\r') {
+                line.pop();
             }
-            Err(ref e) if e.kind() == std::io::ErrorKind::WouldBlock => {
-                // wait until network socket is ready, typically implemented
-                // via platform-specific APIs such as epoll or IOCP
-                false
+    
+            return Some(String::from_utf8_lossy(&line).into_owned());
+        }
+    
+        // Lire de nouvelles données
+        let mut temp = [0u8; 4096];
+    
+        loop {
+            match self.stream.read(&mut temp) {
+                Ok(0) => return None,
+    
+                Ok(size) => {
+                    self.receive_buffer.extend_from_slice(&temp[..size]);
+    
+                    // Un message complet a peut-être été reçu
+                    if let Some(pos) =
+                        self.receive_buffer.iter().position(|&b| b == b'\n')
+                    {
+                        let mut line: Vec<u8> =
+                            self.receive_buffer.drain(..=pos).collect();
+    
+                        line.pop();
+    
+                        if line.last() == Some(&b'\r') {
+                            line.pop();
+                        }
+    
+                        return Some(
+                            String::from_utf8_lossy(&line).into_owned()
+                        );
+                    }
+                }
+    
+                Err(ref e)
+                    if e.kind() == std::io::ErrorKind::Interrupted =>
+                {
+                    continue;
+                }
+    
+                Err(ref e)
+                    if e.kind() == std::io::ErrorKind::WouldBlock =>
+                {
+                    return None;
+                }
+    
+                Err(_) => return None,
             }
-            Err(_e) => false, //panic!("encountered IO error: {e}"),
         }
     }
 
-    pub fn request(&mut self, req: &String) -> String {
-        self.send(req);
-        self.stream
-            .set_nonblocking(false)
-            .expect("set_nonblocking call failed");
-        let mut response: String = String::from("");
-        let worked = self.receive(&mut response);
-        self.stream
-            .set_nonblocking(true)
-            .expect("set_nonblocking call failed");
-        if worked {
-            return response;
-        } else {
-            return String::from("");
+
+    
+   
+    pub fn receive_all(&mut self) -> Option<String> {
+        // verifier si un message complet est deja dans le buffer
+        if let Some(pos) = self.receive_buffer.iter().position(|&b| b == b'\n') {
+            let mut line: Vec<u8> = self.receive_buffer.drain(..=pos).collect();
+    
+            // Retirer le '\n'
+            line.pop();
+    
+            // Retirer le '\r' éventuel
+            if line.last() == Some(&b'\r') {
+                line.pop();
+            }
+    
+            return Some(String::from_utf8_lossy(&line).into_owned());
+        }
+    
+        // lire les données du socket jusqu'à obtenir un message complet
+        let mut temp = [0u8; 4096];
+    
+        loop {
+            match self.stream.read(&mut temp) {
+                Ok(0) => return None,
+    
+                Ok(size) => {
+                    self.receive_buffer.extend_from_slice(&temp[..size]);
+    
+                    // Dès qu'un message complet est disponible, on le retourne
+                    if let Some(pos) =
+                        self.receive_buffer.iter().position(|&b| b == b'\n')
+                    {
+                        let mut line: Vec<u8> =
+                            self.receive_buffer.drain(..=pos).collect();
+    
+                        line.pop();
+    
+                        if line.last() == Some(&b'\r') {
+                            line.pop();
+                        }
+    
+                        return Some(String::from_utf8_lossy(&line).into_owned());
+                    }
+                }
+    
+                Err(ref e)
+                    if e.kind() == std::io::ErrorKind::Interrupted =>
+                {
+                    continue;
+                }
+    
+                Err(ref e)
+                    if e.kind() == std::io::ErrorKind::WouldBlock =>
+                {
+                    return None;
+                }
+    
+                Err(_) => return None,
+            }
         }
     }
+
+
 
     pub fn parse_response(&self, message: &str) -> Response {
         //à améliorer, en POC pour l'instant
