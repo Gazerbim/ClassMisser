@@ -1,5 +1,6 @@
 pub mod clients;
 pub mod game;
+pub mod game_services;
 pub mod lobbies;
 pub mod lobby;
 pub mod players;

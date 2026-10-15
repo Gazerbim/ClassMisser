@@ -92,7 +92,7 @@
 		"response": {
 		  "type": "game",
 			"header": "game_is_starting",
-			"data": "{ color: String}"
+			"data": "{ color: usize, number_player: i8, board_size: usize }"
 		}
 	},
  {

@@ -7,7 +7,7 @@ use std::net::SocketAddr;
 
 use crate::services::clients::{Client, Clients};
 use crate::services::lobbies::Lobbies;
-use crate::services::players::{Player, Players};
+use crate::services::players::{self, Player, Players};
 use crate::services::protocol::Request;
 
 const SERVER: Token = Token(0);
@@ -455,22 +455,42 @@ impl Server {
         }
         if id != -1 {
             let id = id as usize;
+            let n = n as i8;
 
-            let lobby = self.lobbies.list.get_mut(&id).unwrap();
-            lobby.in_game = true;
-            lobby.number_of_players = n as usize;
+            self.lobbies.start_game_by_lobby_id(id, n, 9);
+            let players = self.lobbies.get_clients_from_lobby(id);
+            for i in 0..players.len() {
+                self.send_to_client(
+                    players[i as usize],
+                    &Self::make_response(
+                        "game",
+                        "game_is_starting",
+                        serde_json::json!({
+                            "accept": true,
+                            "color": i,
+                            "number_player": n,
+                            "board_size": 9,
+                        }),
+                    ),
+                )
+                .unwrap();
+            }
 
-            self.broadcast_to_lobby(
-                id,
-                &Self::make_response(
-                    "game",
-                    "game_is_starting",
-                    serde_json::json!({
-                        "accept": true,
-                        "color": "white"
-                    }),
-                ),
-            )
+            Ok(())
+
+            // self.broadcast_to_lobby(
+            //     id,
+            //     &Self::make_response(
+            //         "game",
+            //         "game_is_starting",
+            //         serde_json::json!({
+            //             "accept": true,
+            //             "color": "white",
+            //             "number_player": n,
+            //             "board_size": 9,
+            //         }),
+            //     ),
+            // )
         } else {
             self.send_to_client(
                 sender,

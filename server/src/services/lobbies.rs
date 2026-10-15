@@ -37,6 +37,18 @@ impl Lobbies {
         -1
     }
 
+    pub fn get_clients_from_lobby(&self, id: usize) -> Vec<Token> {
+        self.list.get(&id).unwrap().get_all_players()
+    }
+
+    pub fn get_players_from_lobby(&self, id: usize) -> Vec<Token> {
+        self.list.get(&id).unwrap().get_players()
+    }
+
+    pub fn get_spectators_from_lobby(&self, id: usize) -> Vec<Token> {
+        self.list.get(&id).unwrap().get_spectators()
+    }
+
     pub fn get_lobby_id_by_name(&mut self, name: String) -> Option<usize> {
         for k in self.list.keys() {
             if self.list.get(k).unwrap().name == name {
@@ -66,6 +78,13 @@ impl Lobbies {
         for n in empty_lobbies {
             self.delete_lobby_by_name(n);
         }
+    }
+
+    pub fn start_game_by_lobby_id(&mut self, id: usize, number_team: i8, board_size: usize) {
+        self.list
+            .get_mut(&id)
+            .unwrap()
+            .start_game(number_team, board_size);
     }
 
     pub fn delete_lobby_by_name(&mut self, name: String) {

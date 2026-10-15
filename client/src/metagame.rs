@@ -288,7 +288,15 @@ impl Metagame {
                     Some(_c) => _c,
                     None => -1,
                 };
-                self.game.init_game(new_color as i32, 9, 4);
+                let n: i8 = match response.data["number_player"].as_i64() {
+                    Some(_n) => _n as i8,
+                    None => 4,
+                };
+                let size: usize = match response.data["board_size"].as_i64() {
+                    Some(_s) => _s as usize,
+                    None => 9,
+                };
+                self.game.init_game(new_color as i32, size, n);
                 self.state = State::InGame
             }
             _ => {}

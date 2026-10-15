@@ -15,7 +15,7 @@ impl Pieces {
         }
     }
 
-    pub fn load_pieces(&mut self, team_number: i8) -> Pieces {
+    pub fn load_pieces(&mut self, team_number: i8) -> bool {
         let content =
             std::fs::read_to_string("src/data/pieces.json").expect("error when reading the file");
 
@@ -32,10 +32,9 @@ impl Pieces {
             }
         }
 
-        Pieces {
-            pieces: pieces_final,
-            team_number: team_number,
-        }
+        self.pieces = pieces_final;
+        self.team_number = team_number;
+        true
     }
 
     fn get_piece_from_id(&self, id: i8) -> &Piece {
