@@ -36,75 +36,8 @@ impl Client {
             Err(_) => false,
         }
     }
-
-    
-    
-    pub fn receive(&mut self) -> Option<String> {
-        // Vérifier si un message complet est déjà en mémoire
-        if let Some(pos) = self.receive_buffer.iter().position(|&b| b == b'\n') {
-            let mut line: Vec<u8> = self.receive_buffer.drain(..=pos).collect();
-    
-            // Retirer le '\n'
-            line.pop();
-    
-            // Retirer le '\r' éventuel
-            if line.last() == Some(&b'\r') {
-                line.pop();
-            }
-    
-            return Some(String::from_utf8_lossy(&line).into_owned());
-        }
-    
-        // Lire de nouvelles données
-        let mut temp = [0u8; 4096];
-    
-        loop {
-            match self.stream.read(&mut temp) {
-                Ok(0) => return None,
-    
-                Ok(size) => {
-                    self.receive_buffer.extend_from_slice(&temp[..size]);
-    
-                    // Un message complet a peut-être été reçu
-                    if let Some(pos) =
-                        self.receive_buffer.iter().position(|&b| b == b'\n')
-                    {
-                        let mut line: Vec<u8> =
-                            self.receive_buffer.drain(..=pos).collect();
-    
-                        line.pop();
-    
-                        if line.last() == Some(&b'\r') {
-                            line.pop();
-                        }
-    
-                        return Some(
-                            String::from_utf8_lossy(&line).into_owned()
-                        );
-                    }
-                }
-    
-                Err(ref e)
-                    if e.kind() == std::io::ErrorKind::Interrupted =>
-                {
-                    continue;
-                }
-    
-                Err(ref e)
-                    if e.kind() == std::io::ErrorKind::WouldBlock =>
-                {
-                    return None;
-                }
-    
-                Err(_) => return None,
-            }
-        }
-    }
-
-
-    
    
-    pub fn receive_all(&mut self) -> Option<String> {
+    pub fn receive_message(&mut self) -> Option<String> {
         // verifier si un message complet est deja dans le buffer
         if let Some(pos) = self.receive_buffer.iter().position(|&b| b == b'\n') {
             let mut line: Vec<u8> = self.receive_buffer.drain(..=pos).collect();
