@@ -5,7 +5,7 @@ use crate::chat::Chat;
 use crate::client::Client;
 use crate::game::Game;
 use crate::menus::home::Home;
-use crate::types::protocol::{LobbiesList, Response};
+use crate::types::protocol::Response;
 use crate::types::states::State;
 
 use crate::menus::in_lobby::InLobby;
@@ -138,8 +138,9 @@ impl Metagame {
             self.username = self.enter_username.update();
             if self.username != String::from("") {
                 //envoyer au serveur le pseudo
-                let mut req = "{\"type\": \"username\",\"header\": \"give_new_username\", \"data\": {\"username\": \""
-                    .to_string();
+                let mut req =
+                    "{\"type\": \"username\",\"header\": \"give_new_username\", \"data\": {\"username\": \""
+                        .to_string();
                 req.push_str(&self.username);
                 req.push_str("\" }}\n");
                 self.client.send(&req);
@@ -203,17 +204,19 @@ impl Metagame {
     }
 
     fn read_server_responses(&mut self) {
-        let mut raw_response: String = String::from("");
-        if self.client.receive(&mut raw_response) {
-            if raw_response != String::from("") {
-                let response: Response = self.client.parse_response(&raw_response);
-                match response.request_type.as_str() {
-                    "username" => self.read_username_server_response(response),
-                    "lobbies" => self.read_lobby_server_response(response),
-                    "game" => self.read_game_server_response(response),
-                    _ => {}
+        match self.client.receive_message() {
+            Some(raw_response) => {
+                if raw_response != String::from("") {
+                    let response: Response = self.client.parse_response(&raw_response);
+                    match response.request_type.as_str() {
+                        "username" => self.read_username_server_response(response),
+                        "lobbies" => self.read_lobby_server_response(response),
+                        "game" => self.read_game_server_response(response),
+                        _ => {}
+                    }
                 }
             }
+            None => {}
         }
     }
 
@@ -286,13 +289,13 @@ impl Metagame {
             "game_is_starting" => {
                 let new_color = match response.data["color"].as_i64() {
                     Some(_c) => _c,
-                    None => -1,
+                    None => 5, //si au delà de 5, couleur spectateur
                 };
                 let n: i8 = match response.data["number_player"].as_i64() {
                     Some(_n) => _n as i8,
                     None => 4,
                 };
-                let size: usize = match response.data["board_size"].as_i64() {
+                let size: usize = match response.data["board_game"].as_i64() {
                     Some(_s) => _s as usize,
                     None => 9,
                 };

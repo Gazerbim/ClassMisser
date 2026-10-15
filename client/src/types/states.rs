@@ -7,3 +7,8 @@ pub enum State {
     InLobby,
     InGame,
 }
+
+#[derive(PartialEq)]
+pub enum GameState {
+    WaitInit,
+}

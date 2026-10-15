@@ -36,7 +36,7 @@ impl Server {
     // MAIN LOOP
 
     pub fn start_server(&mut self) -> io::Result<()> {
-        let mut events = Events::with_capacity(128);
+        let mut events = Events::with_capacity(1024);
 
         let address: SocketAddr = format!("{}:{}", self.address, self.port).parse().unwrap();
 

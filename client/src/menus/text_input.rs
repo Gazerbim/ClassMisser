@@ -33,8 +33,9 @@ impl TextInput {
         }
     }
 
-    pub fn update(&self) -> String {
+    pub fn update(&mut self) -> String {
         if self.enter_pressed {
+            self.enter_pressed = false;
             return self.buffer.clone();
         } else {
             return String::from("");

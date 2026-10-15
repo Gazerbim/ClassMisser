@@ -2,11 +2,14 @@ use console_engine::ConsoleEngine;
 
 use crate::services::board::Board;
 use crate::services::pieces::Pieces;
+use crate::types::protocol::Response;
+use crate::types::states::GameState;
 
 pub struct Game {
     color: i32,
     board: Board,
     pieces: Pieces,
+    state: GameState,
 }
 
 impl Game {
@@ -15,6 +18,7 @@ impl Game {
             color: -1,
             board: Board::new(),
             pieces: Pieces::new(),
+            state: GameState::WaitInit,
         }
     }
 
@@ -26,6 +30,13 @@ impl Game {
         self.board.init(board_size, team_number);
         self.pieces.load_pieces(team_number);
         self.color = color;
+    }
+
+    pub fn handle_server(&mut self, response: Response) {
+        match response.header.as_str() {
+            "setup" => {}
+            _ => {}
+        }
     }
 
     pub fn handling_hevents(&self) {}
