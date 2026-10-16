@@ -138,7 +138,7 @@ impl Lobbies {
                         "data": serde_json::json!({"message": "Lobby name already taken"}),
                     })
                     .to_string()
-                        + "\n";
+                        + "$";
                 }
                 let mut new_id = self.list.len();
                 if self.availables_ids_for_lobby.len() > 0 {
@@ -224,6 +224,6 @@ impl Lobbies {
             "data": response_data,
         })
         .to_string()
-            + "\n"
+            + "$"
     }
 }

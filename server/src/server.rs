@@ -183,7 +183,7 @@ impl Server {
                     Ok(size) => {
                         client.buffer.extend_from_slice(&temp[..size]);
 
-                        while let Some(pos) = client.buffer.iter().position(|&b| b == b'\n') {
+                        while let Some(pos) = client.buffer.iter().position(|&b| b == b'$') {
                             let line: Vec<u8> = client.buffer.drain(..=pos).collect();
 
                             let message = String::from_utf8_lossy(&line[..line.len() - 1])
@@ -417,7 +417,7 @@ impl Server {
             "data": data
         })
         .to_string()
-            + "\n"
+            + "$"
     }
 
     // USERNAME

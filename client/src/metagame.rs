@@ -72,7 +72,7 @@ impl Metagame {
             } else if action == String::from("Rejoindre un salon") {
                 //get la liste des lobby disponibles
                 if self.client.send(
-                    &"{\"type\": \"lobbies\",\"header\": \"list_available_lobbies\"}\n".to_string(),
+                    &"{\"type\": \"lobbies\",\"header\": \"list_available_lobbies\"}$".to_string(),
                 ) {
                     self.state = State::ChooseLobby;
                 }
@@ -98,7 +98,7 @@ impl Metagame {
                     "{\"type\": \"lobbies\",\"header\": \"quit_lobby\", \"data\": { \"name\": \""
                         .to_string();
                 req.push_str(&self.in_lobby.get_name());
-                req.push_str("\"}}\n");
+                req.push_str("\"}}$");
                 if self.client.send(&req) {
                     self.state = State::Home;
                 }
@@ -115,7 +115,7 @@ impl Metagame {
                     "{\"type\": \"lobbies\",\"header\": \"enter_lobby\", \"data\": {\"name\": \""
                         .to_string();
                 req.push_str(&nom_lobby);
-                req.push_str("\" }}\n");
+                req.push_str("\" }}$");
                 if self.client.send(&req) {}
             }
         } else if self.state == State::InGame {
@@ -142,7 +142,7 @@ impl Metagame {
                     "{\"type\": \"username\",\"header\": \"give_new_username\", \"data\": {\"username\": \""
                         .to_string();
                 req.push_str(&self.username);
-                req.push_str("\" }}\n");
+                req.push_str("\" }}$");
                 self.client.send(&req);
                 //self.state = State::Home;
             }
@@ -155,7 +155,7 @@ impl Metagame {
                     "{\"type\": \"lobbies\",\"header\": \"create_lobby\", \"data\": {\"name\": \""
                         .to_string();
                 req.push_str(&new_lobby_name);
-                req.push_str("\" }}\n");
+                req.push_str("\" }}$");
                 self.client.send(&req);
             }
         } else if self.state == State::InLobby {
@@ -165,7 +165,7 @@ impl Metagame {
                     "{\"type\": \"game\", \"header\": \"start_game\", \"data\": { \"players\": ",
                 );
                 req.push_str(&self.in_lobby.get_player_number().to_string());
-                req.push_str(" }}\n");
+                req.push_str(" }}$");
                 self.client.send(&req);
             }
             self.in_lobby.update();
