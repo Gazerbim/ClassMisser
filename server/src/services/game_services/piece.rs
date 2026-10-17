@@ -6,7 +6,7 @@ pub struct Piece {
     name: String,
     pub index: i8,
     pub moves: Vec<Move>,
-    extendable: bool,
+    pub extendable: bool,
     cost: i8,
     label: String,
     pub team: i8,
@@ -34,5 +34,9 @@ impl Piece {
             team: team,
             eating_moves: eating_moves,
         }
+    }
+
+    pub fn get_eating_moves(&self) -> &Vec<Move> {
+        &self.eating_moves
     }
 }

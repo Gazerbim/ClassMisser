@@ -95,18 +95,18 @@
 			"data": "{ color: usize, players: i8, size: usize, x: [usize], y: [usize], pieces: [i8] }"
 		}
 	},
- {
-	"request": {
-		"type": "game",
-		"header": "is_the_game_starting",
-		"data": "{}"
-	},
-	"response": {
-	  "type": "game",
-		"header": "game_is_starting",
-		"data": "{lobbies: {accept: bool, color: String}}"
-	}
-},
+	{
+			"request": {
+				"type": "game",
+				"header": "piece_moves",
+				"data": "{x: usize, y: usize}"
+			},
+			"response": {
+			  "type": "game",
+				"header": "piece_moves",
+				"data": "{ x: [usize], y: [usize] }"
+			}
+		},
 {
 		"request": {
 			"type": "game",

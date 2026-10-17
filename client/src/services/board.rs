@@ -1,10 +1,7 @@
 use crate::services::move_json::Move;
 use crate::services::pieces::Pieces;
 use array2d::Array2D;
-use console_engine::{
-    Color, ConsoleEngine,
-    pixel::{self, Pixel},
-};
+use console_engine::{Color, ConsoleEngine, pixel};
 
 pub struct Board {
     data: Array2D<i8>,
@@ -13,7 +10,6 @@ pub struct Board {
     to_highlight: Vec<Move>,
     board_size: usize,
     team_number: i8,
-    team_colors: [Color; 4],
 }
 
 impl Board {
@@ -22,12 +18,11 @@ impl Board {
         let grid: Array2D<i8> = Array2D::filled_with(0, 1, 1);
         Board {
             data: grid,
-            selected: (usize::MAX, usize::MAX),
+            selected: (0, 0),
             selected_piece: (usize::MAX, usize::MAX),
             to_highlight: Vec::new(),
             board_size: 1,
             team_number: 4,
-            team_colors: [Color::Magenta, Color::Blue, Color::DarkYellow, Color::Green],
         }
     }
 
@@ -38,33 +33,12 @@ impl Board {
         x: Vec<usize>,
         y: Vec<usize>,
         pieces: Vec<i8>,
-        number_of_pieces: i8,
     ) {
         self.team_number = team_number;
         self.board_size = board_size;
         self.data = Array2D::filled_with(0, board_size, board_size);
-        self.data[(0, 0)] = -5;
-        self.data[(board_size - 1, board_size - 1)] = -4;
-        if team_number >= 3 {
-            self.data[(board_size - 1, 0)] = -3;
-        }
-        if team_number >= 4 {
-            self.data[(0, board_size - 1)] = -2;
-        }
         for i in 0..x.len() {
-            if pieces[i] < 0 {
-                self.data[(x[i], y[i])] = pieces[i];
-            } else {
-                self.data[(x[i], y[i])] = pieces[i];
-                self.data[(board_size - 1 - x[i], board_size - 1 - y[i])] =
-                    pieces[i] + number_of_pieces;
-                if team_number >= 3 {
-                    self.data[(board_size - 1 - x[i], y[i])] = pieces[i] + 2 * number_of_pieces;
-                }
-                if team_number >= 4 {
-                    self.data[(x[i], board_size - 1 - y[i])] = pieces[i] + 3 * number_of_pieces;
-                }
-            }
+            self.data[(y[i], x[i])] = pieces[i];
         }
     }
 
@@ -77,6 +51,7 @@ impl Board {
         highlight: bool,
         highlight_playable: bool,
         pieces: &Pieces,
+        team_colors: &[Color; 4],
     ) {
         const WIDTH: usize = 5;
         const HEIGHT: usize = 3;
@@ -103,7 +78,7 @@ impl Board {
                 b: 75,
             }
         } else if value < -1 && value >= -5 {
-            self.team_colors[(value + 5) as usize] //couleurs des cases dans les coins pour les équipes
+            team_colors[(value + 5) as usize] //couleurs des cases dans les coins pour les équipes
         } else if (x + y) % 2 == 0 {
             Color::Rgb {
                 r: 230,
@@ -131,7 +106,7 @@ impl Board {
 
         // Pièce
         if value > 0 {
-            let color: Color = self.team_colors[pieces.get_team(value) as usize];
+            let color: Color = team_colors[pieces.get_team(value) as usize];
             engine.set_pxl(
                 (screen_x + 2) as i32,
                 (screen_y + 1) as i32,
@@ -149,7 +124,12 @@ impl Board {
         }
     }
 
-    pub fn display(&mut self, engine: &mut ConsoleEngine, pieces: &Pieces) {
+    pub fn display(
+        &mut self,
+        engine: &mut ConsoleEngine,
+        pieces: &Pieces,
+        team_colors: &[Color; 4],
+    ) {
         for y in 0..self.board_size {
             for x in 0..self.board_size {
                 self.draw_square(
@@ -162,13 +142,23 @@ impl Board {
                         .iter()
                         .any(|m| m.x == x as i8 && m.y == y as i8),
                     pieces,
+                    team_colors,
                 );
             }
         }
     }
 
-    fn clear_highlights(&mut self) {
+    pub fn clear_highlights(&mut self) {
         self.to_highlight.clear();
+    }
+
+    pub fn highlight(&mut self, x: &Vec<usize>, y: &Vec<usize>) {
+        for i in 0..x.len() {
+            self.to_highlight.push(Move {
+                x: x[i] as i8,
+                y: y[i] as i8,
+            });
+        }
     }
 
     fn set(&mut self, x: usize, y: usize, value: i8) {
@@ -179,6 +169,10 @@ impl Board {
         return self.data[(y, x)];
     }
 
+    pub fn get_selected(&self) -> (usize, usize) {
+        self.selected
+    }
+
     fn move_piece(&mut self, x_from: usize, y_from: usize, x_to: usize, y_to: usize) -> i8 {
         let what_is_to = self.get(x_to, y_to);
         self.set(x_to, y_to, self.get(x_from, y_from));
@@ -187,7 +181,7 @@ impl Board {
         return what_is_to;
     }
 
-    fn move_selected_area(&mut self, dx: i8, dy: i8) {
+    pub fn move_selected_area(&mut self, dx: i8, dy: i8) {
         let tx = self.selected.0 as i16 + dx as i16;
         let ty = self.selected.1 as i16 + dy as i16;
 
@@ -196,7 +190,7 @@ impl Board {
         }
     }
 
-    fn select(&mut self, pieces: &Pieces) {
+    pub fn select(&mut self, pieces: &Pieces) {
         let piece = self.get(self.selected.0, self.selected.1);
         if piece >= 1 {
             self.selected_piece = self.selected.clone();
@@ -207,6 +201,10 @@ impl Board {
         }
     }
 
+    pub fn to_highlight_is_empty(&self) -> bool {
+        self.to_highlight.is_empty()
+    }
+
     fn is_highlighted(&self, x: usize, y: usize) -> bool {
         return self
             .to_highlight
@@ -214,7 +212,7 @@ impl Board {
             .any(|m| m.x == x as i8 && m.y == y as i8);
     }
 
-    fn is_selected_highlighted(&self) -> bool {
+    pub fn is_selected_highlighted(&self) -> bool {
         return self.is_highlighted(self.selected.0, self.selected.1);
     }
 

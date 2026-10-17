@@ -49,9 +49,10 @@ impl Lobbies {
         self.list.get(&id).unwrap().get_spectators()
     }
 
-    pub fn get_lobby_id_by_name(&mut self, name: String) -> Option<usize> {
+    pub fn get_lobby_id_by_name(&mut self, name: &String) -> Option<usize> {
         for k in self.list.keys() {
-            if self.list.get(k).unwrap().name == name {
+            println!("name: {}", self.list.get(k).unwrap().name);
+            if self.list.get(k).unwrap().name == *name {
                 return Some(k.clone());
             }
         }
@@ -118,9 +119,7 @@ impl Lobbies {
                 let mut lobby_list: Vec<String> = Vec::new();
                 for k in self.list.keys() {
                     match self.list.get(k) {
-                        Some(l) => {
-                            lobby_list.push(l.name.clone()[1..(l.name.len() - 1)].to_string())
-                        }
+                        Some(l) => lobby_list.push(l.name.clone()),
                         None => {}
                     }
                 }
@@ -133,7 +132,7 @@ impl Lobbies {
             "create_lobby" => {
                 //check if the name is already taken
                 if self
-                    .get_lobby_id_by_name(data["name"].to_string())
+                    .get_lobby_id_by_name(&data["name"].to_string())
                     .is_some()
                 {
                     response_header = "error";
@@ -153,7 +152,9 @@ impl Lobbies {
                 self.list.insert(
                     new_id,
                     Lobby {
-                        name: data["name"].to_string(),
+                        name: data["name"].to_string().clone()
+                            [1..(data["name"].to_string().len() - 1)]
+                            .to_string(),
                         list_players: vec![sender],
                         in_game: false,
                         owner: sender,

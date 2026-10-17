@@ -1,4 +1,4 @@
-use crate::services::game_services::piece::Piece;
+use crate::services::game_services::{board::Board, move_json::Move, piece::Piece};
 use std;
 
 #[derive(Debug, Clone)]
@@ -47,5 +47,60 @@ impl Pieces {
 
     fn get_team(&self, id: i8) -> i8 {
         return self.get_piece_from_id(id).team;
+    }
+
+    pub fn get_moves_from_position(&self, x: usize, y: usize, id: i8, board: &Board) -> Vec<Move> {
+        let piece = self.get_piece_from_id(id);
+        let mut moves = Vec::new();
+
+        for m in &piece.moves {
+            let mut i: i8 = 0;
+            let mut new_x = m.x + x as i8;
+            let mut new_y = m.y + y as i8;
+
+            while new_x >= 0
+                && new_x < board.get_board_size() as i8
+                && new_y >= 0
+                && new_y < board.get_board_size() as i8
+            {
+                if (board.get(new_x as usize, new_y as usize) == -1)
+                    || (board.is_occupied(new_x as usize, new_y as usize)
+                        && self.get_team(board.get(new_x as usize, new_y as usize))
+                            == self.get_team(board.get(x, y)))
+                {
+                    break;
+                }
+
+                moves.push(Move { x: new_x, y: new_y });
+
+                if piece.extendable == false || board.is_occupied(new_x as usize, new_y as usize) {
+                    break;
+                }
+
+                i += 1;
+                new_x = m.x * i + x as i8;
+                new_y = m.y * i + y as i8;
+            }
+        }
+
+        for m in piece.get_eating_moves() {
+            let new_x = m.x + x as i8;
+            let new_y = m.y + y as i8;
+
+            if new_x >= 0
+                && new_x < board.get_board_size() as i8
+                && new_y >= 0
+                && new_y < board.get_board_size() as i8
+            {
+                if board.is_occupied(new_x as usize, new_y as usize)
+                    && self.get_team(board.get(new_x as usize, new_y as usize))
+                        != self.get_team(board.get_selected_piece_id())
+                {
+                    moves.push(Move { x: new_x, y: new_y });
+                }
+            }
+        }
+
+        return moves;
     }
 }

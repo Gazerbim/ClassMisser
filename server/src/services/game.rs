@@ -2,8 +2,10 @@ use std::fs;
 
 use array2d::Array2D;
 use serde::{Deserialize, Serialize};
+use serde_json::Value;
 
 use crate::services::game_services::board::Board;
+use crate::services::game_services::move_json::Move;
 use crate::services::game_services::pieces::Pieces;
 //
 // const TEAM_NUMBER: i8 = 4;
@@ -212,5 +214,45 @@ impl Game {
             team_number: 0,
             player_playing: 0,
         }
+    }
+
+    pub fn handle_request(&mut self, sender: i8, header: &str, data: &Value) -> (i8, String) {
+        match header {
+            "piece_moves" => match data["x"].as_i64() {
+                Some(_x) => match data["y"].as_i64() {
+                    Some(_y) => {
+                        let moves = self.get_moves_for_piece(_x as usize, _y as usize);
+                        let mut x_pos = Vec::new();
+                        let mut y_pos = Vec::new();
+                        for m in moves {
+                            x_pos.push(m.x);
+                            y_pos.push(m.y);
+                        }
+                        let message = serde_json::json!({
+                            "type": "game",
+                            "header": "piece_moves",
+                            "data": {
+                                "x": x_pos,
+                                "y": y_pos
+                            }
+                        })
+                        .to_string()
+                            + "$";
+                        println!("send to: {}", sender);
+                        println!("{}", message);
+                        (sender, message)
+                    }
+                    None => (-1, "".to_string()),
+                },
+                None => (-1, "".to_string()),
+            },
+            _ => (-1, "".to_string()),
+        }
+    }
+
+    fn get_moves_for_piece(&self, x: usize, y: usize) -> Vec<Move> {
+        let piece = self.board.get(x, y);
+        self.pieces
+            .get_moves_from_position(x, y, piece, &self.board)
     }
 }

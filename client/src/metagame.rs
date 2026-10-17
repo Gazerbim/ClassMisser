@@ -123,7 +123,8 @@ impl Metagame {
                 //envoyer une requête pour prévenir qu'on a quitté la partie (voir ce qu'on fait dans ce cas)
                 self.state = State::Home;
             }
-            self.game.handling_hevents();
+            self.game
+                .handling_hevents(&self.engine, self.in_lobby.get_name());
             self.chat.handling_events();
         }
         false
@@ -171,6 +172,13 @@ impl Metagame {
             self.in_lobby.update();
         } else if self.state == State::InGame {
             self.game.update();
+            match self.game.send_request() {
+                Some(_r) => {
+                    self.client.send(_r);
+                    self.game.clear_pending_request();
+                }
+                None => {}
+            }
             self.chat.update();
         }
     }
@@ -314,7 +322,9 @@ impl Metagame {
                 self.game.init_game(new_color as i32, size, n, x, y, pieces);
                 self.state = State::InGame
             }
-            _ => {}
+            _ => {
+                self.game.handle_server(response);
+            }
         }
     }
 }

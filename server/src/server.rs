@@ -376,17 +376,26 @@ impl Server {
 
             ("game", _) => {
                 let lobby_name = request.data["lobby_name"].as_str().unwrap().to_string();
-                match self.lobbies.get_lobby_id_by_name(lobby_name) {
+                match self.lobbies.get_lobby_id_by_name(&lobby_name) {
                     Some(id) => {
                         let l = self.lobbies.list.get_mut(&id).unwrap();
-                        let response =
-                            l.handle_request(sender, request.header.as_str(), &request.data);
+                        let (receiver, response) = l.handle_request(
+                            sender,
+                            "game",
+                            request.header.as_str(),
+                            &request.data,
+                        );
                         if response != "".to_string() {
-                            //à priori, dans la pertie, tous les messages sont en broadcast je dirais
-                            self.broadcast_to_lobby(id, response.as_str()).unwrap();
+                            if receiver == Token(0) {
+                                self.broadcast_to_lobby(id, response.as_str()).unwrap();
+                            } else {
+                                self.send_to_client(receiver, response.as_str()).unwrap();
+                            }
                         }
                     }
-                    None => {}
+                    None => {
+                        println!("Lobby {} not found", lobby_name)
+                    }
                 }
             }
 
@@ -480,20 +489,6 @@ impl Server {
             }
 
             Ok(())
-
-            // self.broadcast_to_lobby(
-            //     id,
-            //     &Self::make_response(
-            //         "game",
-            //         "game_is_starting",
-            //         serde_json::json!({
-            //             "accept": true,
-            //             "color": "white",
-            //             "number_player": n,
-            //             "board_size": 9,
-            //         }),
-            //     ),
-            // )
         } else {
             self.send_to_client(
                 sender,

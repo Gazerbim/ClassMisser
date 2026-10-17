@@ -83,6 +83,10 @@ impl Board {
         self.board_size
     }
 
+    pub fn set_selected_piece(&mut self, x: usize, y: usize) {
+        self.selected_piece = (x, y);
+    }
+
     fn clear_highlights(&mut self) {
         self.to_highlight.clear();
     }
@@ -91,7 +95,7 @@ impl Board {
         self.data[(y, x)] = value;
     }
 
-    fn get(&self, x: usize, y: usize) -> i8 {
+    pub fn get(&self, x: usize, y: usize) -> i8 {
         return self.data[(y, x)];
     }
 
@@ -134,11 +138,11 @@ impl Board {
         return self.is_highlighted(self.selected.0, self.selected.1);
     }
 
-    fn is_occupied(&self, x: usize, y: usize) -> bool {
+    pub fn is_occupied(&self, x: usize, y: usize) -> bool {
         return self.get(x, y) > 0;
     }
 
-    fn get_selected_piece_id(&self) -> i8 {
+    pub fn get_selected_piece_id(&self) -> i8 {
         return self.get(self.selected_piece.0, self.selected_piece.1);
     }
 }

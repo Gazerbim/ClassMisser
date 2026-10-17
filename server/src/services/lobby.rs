@@ -1,7 +1,7 @@
 use mio::Token;
 use serde_json::Value;
 
-use crate::services::game::Game;
+use crate::services::game::{self, Game};
 
 pub struct Lobby {
     pub name: String,
@@ -70,9 +70,31 @@ impl Lobby {
         }
     }
 
-    pub fn handle_request(&mut self, sender: Token, header: &str, data: &Value) -> String {
-        match header {
-            _ => String::from(""),
+    pub fn handle_request(
+        &mut self,
+        sender: Token,
+        request_type: &str,
+        header: &str,
+        data: &Value,
+    ) -> (Token, String) {
+        let sender_id = self.list_players.iter().position(|t| *t == sender);
+        match sender_id {
+            Some(_sender) => match request_type {
+                "game" => {
+                    let (who, message) = self.game.handle_request(_sender as i8, header, data);
+                    if message != "".to_string() {
+                        if who < 0 {
+                            (Token(0), message)
+                        } else {
+                            (self.list_players[who as usize], message)
+                        }
+                    } else {
+                        (Token(0), String::from(""))
+                    }
+                }
+                _ => (Token(0), String::from("")),
+            },
+            None => (Token(0), String::from("")),
         }
     }
 }
