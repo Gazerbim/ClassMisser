@@ -196,10 +196,20 @@ pub struct Game {
 
 impl Game {
     pub fn new(team_number: i8, board_size: usize) -> Game {
+        let pieces = Pieces::load_pieces(team_number);
         Game {
-            board: Board::new(team_number, board_size),
-            pieces: Pieces::load_pieces(team_number),
+            board: Board::new(team_number, board_size, &pieces),
+            pieces: pieces,
             team_number: team_number,
+            player_playing: 0,
+        }
+    }
+
+    pub fn empty() -> Game {
+        Game {
+            board: Board::new_empty(),
+            pieces: Pieces::new(),
+            team_number: 0,
             player_playing: 0,
         }
     }

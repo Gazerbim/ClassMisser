@@ -457,7 +457,7 @@ impl Server {
             let id = id as usize;
             let n = n as i8;
 
-            self.lobbies.start_game_by_lobby_id(id, n, 9);
+            let (x, y, p) = self.lobbies.start_game_by_lobby_id(id, n, 9);
             let players = self.lobbies.get_clients_from_lobby(id);
             for i in 0..players.len() {
                 self.send_to_client(
@@ -470,9 +470,9 @@ impl Server {
                             "color": i,
                             "number_player": n,
                             "board_size": 9,
-                            "x": [1, 0, 4, 4, 8, 4],
-                            "y": [1, 4, 0, 8, 4, 4],
-                            "pieces": [1, -1, -1, -1, -1, -1],
+                            "x": x,
+                            "y": y,
+                            "pieces": p,
                         }),
                     ),
                 )

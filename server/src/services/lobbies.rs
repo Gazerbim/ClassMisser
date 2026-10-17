@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use mio::Token;
 use serde_json::Value;
 
-use crate::services::lobby::Lobby;
+use crate::services::{game::Game, lobby::Lobby};
 
 pub struct Lobbies {
     pub list: HashMap<usize, Lobby>,
@@ -80,11 +80,16 @@ impl Lobbies {
         }
     }
 
-    pub fn start_game_by_lobby_id(&mut self, id: usize, number_team: i8, board_size: usize) {
+    pub fn start_game_by_lobby_id(
+        &mut self,
+        id: usize,
+        number_team: i8,
+        board_size: usize,
+    ) -> (Vec<usize>, Vec<usize>, Vec<i8>) {
         self.list
             .get_mut(&id)
             .unwrap()
-            .start_game(number_team, board_size);
+            .start_game(number_team, board_size)
     }
 
     pub fn delete_lobby_by_name(&mut self, name: String) {
@@ -152,7 +157,7 @@ impl Lobbies {
                         list_players: vec![sender],
                         in_game: false,
                         owner: sender,
-                        game: None,
+                        game: Game::empty(),
                         number_of_players: 0,
                     },
                 );

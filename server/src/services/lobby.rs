@@ -8,15 +8,20 @@ pub struct Lobby {
     pub list_players: Vec<Token>,
     pub in_game: bool,
     pub owner: Token,
-    pub game: Option<Game>,
+    pub game: Game,
     pub number_of_players: i8,
 }
 
 impl Lobby {
-    pub fn start_game(&mut self, number_team: i8, board_size: usize) {
-        self.game = Some(Game::new(number_team, board_size));
+    pub fn start_game(
+        &mut self,
+        number_team: i8,
+        board_size: usize,
+    ) -> (Vec<usize>, Vec<usize>, Vec<i8>) {
+        self.game = Game::new(number_team, board_size);
         self.number_of_players = number_team;
         self.in_game = true;
+        self.game.board.get_simplfied_board()
     }
 
     pub fn get_number_players_in_lobby(&self) -> usize {
