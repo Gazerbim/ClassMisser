@@ -92,16 +92,9 @@
 		"response": {
 		  "type": "game",
 			"header": "game_is_starting",
-			"data": "{ color: usize, players: i8, size: usize }"
+			"data": "{ color: usize, players: i8, size: usize, x: [usize], y: [usize], pieces: [i8] }"
 		}
 	},
-	{
-			"response": {
-			  "type": "game",
-				"header": "setup",
-				"data": "{ x: [i8], y: [i8], piece: [i8] }"
-			}
-		},
  {
 	"request": {
 		"type": "game",

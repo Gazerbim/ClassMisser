@@ -26,10 +26,20 @@ impl Board {
         }
     }
 
-    pub fn init(&mut self, board_size: usize, team_number: i8) {
+    pub fn init(
+        &mut self,
+        board_size: usize,
+        team_number: i8,
+        x: Vec<usize>,
+        y: Vec<usize>,
+        pieces: Vec<i8>,
+    ) {
         self.team_number = team_number;
         self.board_size = board_size;
         self.data = Array2D::filled_with(0, board_size, board_size);
+        for i in 0..x.len() {
+            self.data[(x[i], y[i])] = pieces[i];
+        }
     }
 
     fn draw_square(
@@ -89,7 +99,7 @@ impl Board {
 
         // Pièce
         if value > 0 {
-            engine.print((screen_x + 2) as i32, (screen_y + 1) as i32, "");
+            engine.print((screen_x + 2) as i32, (screen_y + 1) as i32, "p");
         }
     }
 

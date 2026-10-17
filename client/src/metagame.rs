@@ -299,7 +299,19 @@ impl Metagame {
                     Some(_s) => _s as usize,
                     None => 9,
                 };
-                self.game.init_game(new_color as i32, size, n);
+                let x: &Vec<Value> = match response.data["x"].as_array() {
+                    Some(_a) => _a,
+                    None => &Vec::new(),
+                };
+                let y: &Vec<Value> = match response.data["y"].as_array() {
+                    Some(_a) => _a,
+                    None => &Vec::new(),
+                };
+                let pieces: &Vec<Value> = match response.data["pieces"].as_array() {
+                    Some(_a) => _a,
+                    None => &Vec::new(),
+                };
+                self.game.init_game(new_color as i32, size, n, x, y, pieces);
                 self.state = State::InGame
             }
             _ => {}
