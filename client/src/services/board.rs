@@ -1,7 +1,10 @@
 use crate::services::move_json::Move;
 use crate::services::pieces::Pieces;
 use array2d::Array2D;
-use console_engine::{Color, ConsoleEngine, pixel};
+use console_engine::{
+    Color, ConsoleEngine,
+    pixel::{self, Pixel},
+};
 
 pub struct Board {
     data: Array2D<i8>,
@@ -10,6 +13,7 @@ pub struct Board {
     to_highlight: Vec<Move>,
     board_size: usize,
     team_number: i8,
+    team_colors: [Color; 4],
 }
 
 impl Board {
@@ -23,6 +27,7 @@ impl Board {
             to_highlight: Vec::new(),
             board_size: 1,
             team_number: 4,
+            team_colors: [Color::Magenta, Color::Blue, Color::DarkYellow, Color::Green],
         }
     }
 
@@ -33,12 +38,33 @@ impl Board {
         x: Vec<usize>,
         y: Vec<usize>,
         pieces: Vec<i8>,
+        number_of_pieces: i8,
     ) {
         self.team_number = team_number;
         self.board_size = board_size;
         self.data = Array2D::filled_with(0, board_size, board_size);
+        self.data[(0, 0)] = -5;
+        self.data[(board_size - 1, board_size - 1)] = -4;
+        if team_number >= 3 {
+            self.data[(board_size - 1, 0)] = -3;
+        }
+        if team_number >= 4 {
+            self.data[(0, board_size - 1)] = -2;
+        }
         for i in 0..x.len() {
-            self.data[(x[i], y[i])] = pieces[i];
+            if pieces[i] < 0 {
+                self.data[(x[i], y[i])] = pieces[i];
+            } else {
+                self.data[(x[i], y[i])] = pieces[i];
+                self.data[(board_size - 1 - x[i], board_size - 1 - y[i])] =
+                    pieces[i] + number_of_pieces;
+                if team_number >= 3 {
+                    self.data[(board_size - 1 - x[i], y[i])] = pieces[i] + 2 * number_of_pieces;
+                }
+                if team_number >= 4 {
+                    self.data[(x[i], board_size - 1 - y[i])] = pieces[i] + 3 * number_of_pieces;
+                }
+            }
         }
     }
 
@@ -71,7 +97,13 @@ impl Board {
                 b: 20,
             }
         } else if value == -1 {
-            Color::Rgb { r: 0, g: 0, b: 0 }
+            Color::Rgb {
+                r: 75,
+                g: 75,
+                b: 75,
+            }
+        } else if value < -1 && value >= -5 {
+            self.team_colors[(value + 5) as usize] //couleurs des cases dans les coins pour les équipes
         } else if (x + y) % 2 == 0 {
             Color::Rgb {
                 r: 230,
@@ -99,7 +131,21 @@ impl Board {
 
         // Pièce
         if value > 0 {
-            engine.print((screen_x + 2) as i32, (screen_y + 1) as i32, "p");
+            let color: Color = self.team_colors[pieces.get_team(value) as usize];
+            engine.set_pxl(
+                (screen_x + 2) as i32,
+                (screen_y + 1) as i32,
+                pixel::pxl_bg(' ', color),
+            );
+            engine.set_pxl(
+                (screen_x + 1) as i32,
+                (screen_y + 1) as i32,
+                pixel::pxl_fbg(
+                    *pieces.get_piece_from_id(value).get_label(),
+                    Color::Black,
+                    color,
+                ),
+            );
         }
     }
 

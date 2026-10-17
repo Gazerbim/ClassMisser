@@ -470,9 +470,9 @@ impl Server {
                             "color": i,
                             "number_player": n,
                             "board_size": 9,
-                            "x": [1],
-                            "y": [1],
-                            "pieces": [1],
+                            "x": [1, 0, 4, 4, 8, 4],
+                            "y": [1, 4, 0, 8, 4, 4],
+                            "pieces": [1, -1, -1, -1, -1, -1],
                         }),
                     ),
                 )

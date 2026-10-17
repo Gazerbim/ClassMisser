@@ -8,19 +8,19 @@ pub struct Piece {
     pub moves: Vec<Move>,
     extendable: bool,
     cost: i8,
-    label: String,
+    label: char,
     pub team: i8,
     eating_moves: Vec<Move>,
 }
 
 impl Piece {
-    fn new(
+    pub fn new(
         name: String,
         index: i8,
         moves: Vec<Move>,
         extendable: bool,
         cost: i8,
-        label: String,
+        label: char,
         team: i8,
         eating_moves: Vec<Move>,
     ) -> Piece {
@@ -34,5 +34,9 @@ impl Piece {
             team: team,
             eating_moves: eating_moves,
         }
+    }
+
+    pub fn get_label(&self) -> &char {
+        &self.label
     }
 }

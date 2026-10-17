@@ -58,8 +58,15 @@ impl Game {
                 }
             }
         }
-        self.board.init(board_size, team_number, xc, yc, all_pieces);
         self.pieces.load_pieces(team_number);
+        self.board.init(
+            board_size,
+            team_number,
+            xc,
+            yc,
+            all_pieces,
+            self.pieces.get_number_different_pieces(),
+        );
         self.color = color;
     }
 
