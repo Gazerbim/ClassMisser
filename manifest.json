@@ -95,18 +95,30 @@
 			"data": "{ color: usize, players: i8, size: usize, x: [usize], y: [usize], pieces: [i8] }"
 		}
 	},
-	{
-			"request": {
-				"type": "game",
-				"header": "piece_moves",
-				"data": "{x: usize, y: usize}"
-			},
-			"response": {
-			  "type": "game",
-				"header": "piece_moves",
-				"data": "{ x: [usize], y: [usize] }"
-			}
+{
+	"request": {
+		"type": "game",
+		"header": "piece_moves",
+		"data": "{x: usize, y: usize, lobby_name: String }"
+	},
+	"response": {
+	  "type": "game",
+		"header": "piece_moves",
+		"data": "{ x: [usize], y: [usize] }"
+	}
+},
+{
+		"request": {
+			"type": "game",
+			"header": "move_piece",
+			"data": "{ ox: usize, oy: usize, nx: usize, ny: usize, lobby_name: String }"
 		},
+		"response": {
+		  "type": "game",
+			"header": "update_board",
+			"data": "{ x: [usize], y: [usize], pieces: [i8] }"
+		}
+	},
 {
 		"request": {
 			"type": "game",

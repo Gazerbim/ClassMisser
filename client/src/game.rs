@@ -110,6 +110,54 @@ impl Game {
                     self.board.highlight(&x, &y);
                 }
             }
+            "update_board" => {
+                let mut x: Vec<usize> = Vec::new();
+                let mut y: Vec<usize> = Vec::new();
+                let mut p: Vec<i8> = Vec::new();
+                let mut broken = false;
+                match response.data["x"].as_array() {
+                    Some(_x) => {
+                        for v in _x {
+                            match v.as_i64() {
+                                None => broken = true,
+                                Some(_v) => {
+                                    x.push(_v as usize);
+                                }
+                            }
+                        }
+                    }
+                    None => {}
+                };
+                match response.data["y"].as_array() {
+                    Some(_y) => {
+                        for v in _y {
+                            match v.as_i64() {
+                                None => broken = true,
+                                Some(_v) => {
+                                    y.push(_v as usize);
+                                }
+                            }
+                        }
+                    }
+                    None => {}
+                };
+                match response.data["pieces"].as_array() {
+                    Some(_p) => {
+                        for v in _p {
+                            match v.as_i64() {
+                                None => broken = true,
+                                Some(_v) => {
+                                    p.push(_v as i8);
+                                }
+                            }
+                        }
+                    }
+                    None => {}
+                };
+                if !broken {
+                    self.board.update(x, y, p);
+                }
+            }
             _ => {}
         }
     }
@@ -150,7 +198,21 @@ impl Game {
                     self.board.clear_highlights();
                 }
             } else if self.board.is_selected_highlighted() && self.is_playing == self.color {
-                //faire requête pour bouger pièce si c'est à moi de jouer
+                let (ox, oy) = self.board.get_selected_piece();
+                let (nx, ny) = self.board.get_selected();
+                self.pending_request = serde_json::json!({
+                    "type": "game",
+                    "header": "move_piece",
+                    "data": {
+                        "ox": ox,
+                        "oy": oy,
+                        "nx": nx,
+                        "ny": ny,
+                        "lobby_name": lobby_name
+                    }
+                })
+                .to_string()
+                    + "$"
             }
         }
     }

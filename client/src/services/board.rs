@@ -190,6 +190,13 @@ impl Board {
         }
     }
 
+    pub fn update(&mut self, x: Vec<usize>, y: Vec<usize>, p: Vec<i8>) {
+        for i in 0..x.len() {
+            self.set(x[i], y[i], p[i]);
+        }
+        self.clear_highlights();
+    }
+
     pub fn select(&mut self, pieces: &Pieces, player: i8) -> (usize, usize) {
         let mut piece = self.get(self.selected.0, self.selected.1);
         piece -= pieces.get_number_different_pieces() * player;
@@ -198,6 +205,10 @@ impl Board {
         } else {
             self.selected_piece = (usize::MAX, usize::MAX);
         }
+        self.selected_piece
+    }
+
+    pub fn get_selected_piece(&self) -> (usize, usize) {
         self.selected_piece
     }
 

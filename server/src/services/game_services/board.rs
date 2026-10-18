@@ -99,7 +99,7 @@ impl Board {
         return self.data[(y, x)];
     }
 
-    fn move_piece(&mut self, x_from: usize, y_from: usize, x_to: usize, y_to: usize) -> i8 {
+    pub fn move_piece(&mut self, x_from: usize, y_from: usize, x_to: usize, y_to: usize) -> i8 {
         let what_is_to = self.get(x_to, y_to);
         self.set(x_to, y_to, self.get(x_from, y_from));
         self.set(x_from, y_from, 0);

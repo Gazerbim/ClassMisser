@@ -7,6 +7,7 @@ use serde_json::Value;
 use crate::services::game_services::board::Board;
 use crate::services::game_services::move_json::Move;
 use crate::services::game_services::pieces::Pieces;
+use crate::services::players;
 //
 // const TEAM_NUMBER: i8 = 4;
 // const BOARD_SIZE: usize = 8;
@@ -194,6 +195,7 @@ pub struct Game {
     pub pieces: Pieces,
     pub team_number: i8,
     player_playing: i8,
+    players_points: [usize; 4],
 }
 
 impl Game {
@@ -204,6 +206,7 @@ impl Game {
             pieces: pieces,
             team_number: team_number,
             player_playing: 0,
+            players_points: [0, 0, 0, 0],
         }
     }
 
@@ -213,6 +216,7 @@ impl Game {
             pieces: Pieces::new(),
             team_number: 0,
             player_playing: 0,
+            players_points: [0, 0, 0, 0],
         }
     }
 
@@ -246,6 +250,39 @@ impl Game {
                 },
                 None => (-1, "".to_string()),
             },
+            "move_piece" => match (
+                data["ox"].as_i64(),
+                data["oy"].as_i64(),
+                data["nx"].as_i64(),
+                data["ny"].as_i64(),
+            ) {
+                (Some(ox), Some(oy), Some(nx), Some(ny)) => {
+                    if ox > 0 && oy > 0 && nx > 0 && ny > 0 {
+                        let (x, y, p) =
+                            self.try_move_piece(ox as i8, oy as i8, nx as i8, ny as i8, sender);
+                        (
+                            -1,
+                            serde_json::json!({
+                                "type": "game",
+                                "header": "update_board",
+                                "data": {
+                                    "x": x,
+                                    "y": y,
+                                    "pieces": p,
+                                }
+                            })
+                            .to_string()
+                                + "$",
+                        )
+                    } else {
+                        (-1, "".to_string())
+                    }
+                }
+                (None, _, _, _) => (-1, "".to_string()),
+                (_, None, _, _) => (-1, "".to_string()),
+                (_, _, None, _) => (-1, "".to_string()),
+                (_, _, _, None) => (-1, "".to_string()),
+            },
             _ => (-1, "".to_string()),
         }
     }
@@ -254,5 +291,43 @@ impl Game {
         let piece = self.board.get(x, y);
         self.pieces
             .get_moves_from_position(x, y, piece, &self.board)
+    }
+
+    fn try_move_piece(
+        &mut self,
+        ox: i8,
+        oy: i8,
+        nx: i8,
+        ny: i8,
+        player: i8,
+    ) -> (Vec<usize>, Vec<usize>, Vec<i8>) {
+        //vérifier légalité mouvement
+        let id = self.board.get(ox as usize, oy as usize);
+        if id - player * self.pieces.get_number_of_different_pieces() >= 1
+            && player * self.pieces.get_number_of_different_pieces()
+                < self.pieces.get_number_of_different_pieces()
+        {
+            //la pièce appartient bien au joueur
+            let moves =
+                self.pieces
+                    .get_moves_from_position(ox as usize, oy as usize, id, &self.board);
+            for m in moves {
+                if m.x == nx && m.y == ny {
+                    //move effectivement possible
+                    let eaten =
+                        self.board
+                            .move_piece(ox as usize, oy as usize, nx as usize, ny as usize);
+                    if eaten > 0 {
+                        self.players_points[self.player_playing as usize] += 1;
+                    }
+                    return (
+                        vec![nx as usize, ox as usize],
+                        vec![ny as usize, oy as usize],
+                        vec![id, 0],
+                    );
+                }
+            }
+        }
+        (Vec::new(), Vec::new(), Vec::new())
     }
 }

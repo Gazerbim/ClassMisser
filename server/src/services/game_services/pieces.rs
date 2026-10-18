@@ -42,6 +42,10 @@ impl Pieces {
         }
     }
 
+    pub fn get_number_of_different_pieces(&self) -> i8 {
+        self.number_of_different_pieces
+    }
+
     fn get_piece_from_id(&self, id: i8) -> &Piece {
         self.pieces
             .iter()
