@@ -5,6 +5,7 @@ use std;
 pub struct Pieces {
     pieces: Vec<Piece>,
     team_number: i8,
+    number_of_different_pieces: i8,
 }
 
 impl Pieces {
@@ -12,6 +13,7 @@ impl Pieces {
         Pieces {
             pieces: Vec::new(),
             team_number: 0,
+            number_of_different_pieces: 0,
         }
     }
 
@@ -20,6 +22,7 @@ impl Pieces {
             std::fs::read_to_string("src/data/pieces.json").expect("error when reading the file");
 
         let pieces: Vec<Piece> = serde_json::from_str(&content).expect("error when parsing json");
+        let number_of_different_pieces = pieces.len() as i8;
 
         let mut pieces_final: Vec<Piece> = Vec::new();
 
@@ -27,7 +30,7 @@ impl Pieces {
             for piece in &pieces {
                 let mut npiece = piece.clone();
                 npiece.team = i;
-                npiece.index = piece.index + team_number * i;
+                npiece.index = piece.index + number_of_different_pieces * i;
                 pieces_final.push(npiece);
             }
         }
@@ -35,6 +38,7 @@ impl Pieces {
         Pieces {
             pieces: pieces_final,
             team_number: team_number,
+            number_of_different_pieces: number_of_different_pieces,
         }
     }
 

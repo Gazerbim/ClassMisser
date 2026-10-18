@@ -165,7 +165,7 @@ impl Board {
         self.data[(y, x)] = value;
     }
 
-    fn get(&self, x: usize, y: usize) -> i8 {
+    pub fn get(&self, x: usize, y: usize) -> i8 {
         return self.data[(y, x)];
     }
 
@@ -190,15 +190,15 @@ impl Board {
         }
     }
 
-    pub fn select(&mut self, pieces: &Pieces) {
-        let piece = self.get(self.selected.0, self.selected.1);
-        if piece >= 1 {
+    pub fn select(&mut self, pieces: &Pieces, player: i8) -> (usize, usize) {
+        let mut piece = self.get(self.selected.0, self.selected.1);
+        piece -= pieces.get_number_different_pieces() * player;
+        if piece >= 1 && piece <= pieces.get_number_different_pieces() {
             self.selected_piece = self.selected.clone();
-            // let moves: Vec<Move> =
-            //     pieces.get_moves_from_position(self.selected.0, self.selected.1, piece, self);
-            // self.to_highlight = moves;
-            self.selected_piece = self.selected.clone();
+        } else {
+            self.selected_piece = (usize::MAX, usize::MAX);
         }
+        self.selected_piece
     }
 
     pub fn to_highlight_is_empty(&self) -> bool {

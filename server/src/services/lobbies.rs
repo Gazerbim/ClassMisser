@@ -51,7 +51,6 @@ impl Lobbies {
 
     pub fn get_lobby_id_by_name(&mut self, name: &String) -> Option<usize> {
         for k in self.list.keys() {
-            println!("name: {}", self.list.get(k).unwrap().name);
             if self.list.get(k).unwrap().name == *name {
                 return Some(k.clone());
             }
@@ -172,7 +171,10 @@ impl Lobbies {
             "enter_lobby" => {
                 let mut added = String::from("");
                 for l in self.list.values_mut() {
-                    if l.name == data["name"].to_string() {
+                    if l.name
+                        == data["name"].to_string().clone()[1..(data["name"].to_string().len() - 1)]
+                            .to_string()
+                    {
                         let mut already_in = false;
                         for p in l.list_players.iter() {
                             if *p == sender {

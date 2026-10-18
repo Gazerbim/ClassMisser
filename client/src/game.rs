@@ -123,20 +123,18 @@ impl Game {
     }
 
     pub fn handling_hevents(&mut self, e: &ConsoleEngine, lobby_name: String) {
-        if self.is_playing == self.color {
-            //c'est à mon tour de jouer
-            if e.is_key_pressed(KeyCode::Right) || e.is_key_pressed(KeyCode::Char('l')) {
-                self.board.move_selected_area(1, 0);
-            } else if e.is_key_pressed(KeyCode::Left) || e.is_key_pressed(KeyCode::Char('h')) {
-                self.board.move_selected_area(-1, 0);
-            } else if e.is_key_pressed(KeyCode::Down) || e.is_key_pressed(KeyCode::Char('j')) {
-                self.board.move_selected_area(0, 1);
-            } else if e.is_key_pressed(KeyCode::Up) || e.is_key_pressed(KeyCode::Char('k')) {
-                self.board.move_selected_area(0, -1);
-            } else if e.is_key_pressed(KeyCode::Char(' ')) {
-                if self.board.to_highlight_is_empty() {
-                    self.board.select(&self.pieces);
-                    let (x, y) = &self.board.get_selected();
+        if e.is_key_pressed(KeyCode::Right) || e.is_key_pressed(KeyCode::Char('l')) {
+            self.board.move_selected_area(1, 0);
+        } else if e.is_key_pressed(KeyCode::Left) || e.is_key_pressed(KeyCode::Char('h')) {
+            self.board.move_selected_area(-1, 0);
+        } else if e.is_key_pressed(KeyCode::Down) || e.is_key_pressed(KeyCode::Char('j')) {
+            self.board.move_selected_area(0, 1);
+        } else if e.is_key_pressed(KeyCode::Up) || e.is_key_pressed(KeyCode::Char('k')) {
+            self.board.move_selected_area(0, -1);
+        } else if e.is_key_pressed(KeyCode::Char(' ')) {
+            if !self.board.is_selected_highlighted() {
+                let (x, y) = self.board.select(&self.pieces, self.color as i8);
+                if x != usize::MAX {
                     self.pending_request = serde_json::json!({
                         "type": "game",
                         "header": "piece_moves",
@@ -149,10 +147,10 @@ impl Game {
                     .to_string()
                         + "$"
                 } else {
-                    if self.board.is_selected_highlighted() {
-                        //faire requête pour bouger pièce
-                    }
+                    self.board.clear_highlights();
                 }
+            } else if self.board.is_selected_highlighted() && self.is_playing == self.color {
+                //faire requête pour bouger pièce si c'est à moi de jouer
             }
         }
     }
@@ -161,10 +159,10 @@ impl Game {
         self.board.display(e, &self.pieces, &self.team_colors);
         if self.is_playing != self.color {
             e.line(
+                1,
+                30,
                 2,
-                3,
-                50,
-                50,
+                30,
                 pixel::pxl_bg(' ', self.team_colors[self.is_playing as usize]),
             );
             e.print(4, 30, "est en train de jouer...");
