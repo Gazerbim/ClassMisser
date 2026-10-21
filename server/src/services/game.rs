@@ -314,6 +314,7 @@ impl Game {
         let id = self.board.get(ox as usize, oy as usize);
         println!(" id {} - player {}*{}", id, player, self.pieces.get_number_of_different_pieces());
         if id - player * self.pieces.get_number_of_different_pieces() >= 1
+        
         {
             //la pièce appartient bien au joueur
             println!("player {} is playing et la piece appartient au joueur", player);
