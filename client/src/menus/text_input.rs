@@ -1,9 +1,14 @@
-use console_engine::{KeyCode, pixel};
+use console_engine::{
+    Color::{self, DarkRed},
+    KeyCode, pixel,
+};
 
 pub struct TextInput {
     title: String,
     buffer: String,
     enter_pressed: bool,
+    capacity: usize,
+    color: Color,
 }
 
 impl TextInput {
@@ -12,7 +17,14 @@ impl TextInput {
             title: title,
             buffer: String::with_capacity(capacity),
             enter_pressed: false,
+            capacity: capacity,
+            color: Color::White,
         }
+    }
+
+    pub fn error(&mut self) {
+        self.buffer = String::with_capacity(self.capacity);
+        self.color = Color::DarkRed;
     }
 
     pub fn handling_events(&mut self, e: &console_engine::ConsoleEngine) {
@@ -53,28 +65,28 @@ impl TextInput {
             top_left.1,
             top_left.0 + (self.buffer.capacity() as i32) + 4,
             top_left.1,
-            pixel::pxl('#'),
+            pixel::pxl_fg('#', self.color),
         );
         e.line(
             top_left.0,
             top_left.1 + 4,
             top_left.0 + (self.buffer.capacity() as i32) + 4,
             top_left.1 + 4,
-            pixel::pxl('#'),
+            pixel::pxl_fg('#', self.color),
         );
         e.line(
             top_left.0,
             top_left.1,
             top_left.0,
             top_left.1 + 4,
-            pixel::pxl('#'),
+            pixel::pxl_fg('#', self.color),
         );
         e.line(
             top_left.0 + (self.buffer.capacity() as i32) + 4,
             top_left.1,
             top_left.0 + (self.buffer.capacity() as i32) + 4,
             top_left.1 + 4,
-            pixel::pxl('#'),
+            pixel::pxl_fg('#', self.color),
         );
         e.print(top_left.0 + 2, top_left.1 + 2, &self.buffer);
     }

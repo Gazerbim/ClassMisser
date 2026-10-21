@@ -1,6 +1,7 @@
 #[derive(PartialEq)]
 pub enum State {
     EnterPseudo,
+    EnterPassword,
     Home,
     ChooseLobby,
     CreateLobby,

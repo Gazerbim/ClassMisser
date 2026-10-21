@@ -27,6 +27,7 @@ pub struct Metagame {
     in_lobby: InLobby,
 
     username: String,
+    password: String,
 }
 
 impl Metagame {
@@ -34,7 +35,7 @@ impl Metagame {
         Metagame {
             client: Client::new(host),
             engine: console_engine::ConsoleEngine::init_fill(20).unwrap(),
-            state: State::EnterPseudo,
+            state: State::Home,
             game: Game::new(),
             chat: Chat::new(),
             home: SelectLobby::new(vec![
@@ -48,7 +49,48 @@ impl Metagame {
             lobby_creator: TextInput::new("Nom du salon à créer".to_string(), 25),
             in_lobby: InLobby::new("".to_string()),
             username: String::from(""),
+            password: String::from(""),
         }
+    }
+
+    pub fn connect(&mut self, username: String, password: String) -> bool {
+        self.username = username.clone();
+        self.password = password.clone();
+        let req = serde_json::json!({
+            "type": "username",
+            "header": "give_new_username",
+            "data": serde_json::json!({
+                "username": username,
+                "password": password,
+            })
+        })
+        .to_string()
+            + "$";
+        if self.client.send(&req) {
+            let mut counter = 0;
+            let mut connected = false;
+            println!("En attente d'une réponse du serveur...");
+            loop {
+                match self.client.receive_message() {
+                    Some(_s) => {
+                        let response = self.client.parse_response(&_s);
+                        match response.data["accept"].as_bool() {
+                            Some(_c) => connected = _c,
+                            None => {}
+                        };
+                        return connected;
+                    }
+                    None => {
+                        counter += 1;
+                        if counter == 50 {
+                            println!("En attente d'une réponse du serveur...");
+                            counter = 0;
+                        }
+                    }
+                }
+            }
+        }
+        false
     }
 
     pub fn main_loop(&mut self) {
@@ -79,7 +121,7 @@ impl Metagame {
             } else if action == "Créer un salon".to_string() {
                 self.state = State::CreateLobby;
             }
-            
+
             if self.engine.is_key_pressed(console_engine::KeyCode::Esc) {
                 return true; // exits app
             }
