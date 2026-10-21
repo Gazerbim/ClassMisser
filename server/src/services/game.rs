@@ -260,7 +260,13 @@ impl Game {
                     if ox > 0 && oy > 0 && nx > 0 && ny > 0 {
                         let (x, y, p) =
                             self.try_move_piece(ox as i8, oy as i8, nx as i8, ny as i8, sender);
-                        (
+                        if x.len() == 0 || y.len() == 0 || p.len() == 0 {
+                            println!("invalid move, no possible moves");
+                            return (-1, "".to_string());
+                        }
+                        self.player_playing = (self.player_playing + 1) % self.team_number;
+                        
+                        return(
                             -1,
                             serde_json::json!({
                                 "type": "game",
@@ -269,12 +275,15 @@ impl Game {
                                     "x": x,
                                     "y": y,
                                     "pieces": p,
+                                    "player_playing": self.player_playing,
                                 }
                             })
                             .to_string()
                                 + "$",
-                        )
+                        );
+                        
                     } else {
+                        println!("invalid move, out of bounds");
                         (-1, "".to_string())
                     }
                 }
@@ -303,11 +312,11 @@ impl Game {
     ) -> (Vec<usize>, Vec<usize>, Vec<i8>) {
         //vérifier légalité mouvement
         let id = self.board.get(ox as usize, oy as usize);
+        println!(" id {} - player {}*{}", id, player, self.pieces.get_number_of_different_pieces());
         if id - player * self.pieces.get_number_of_different_pieces() >= 1
-            && player * self.pieces.get_number_of_different_pieces()
-                < self.pieces.get_number_of_different_pieces()
         {
             //la pièce appartient bien au joueur
+            println!("player {} is playing et la piece appartient au joueur", player);
             let moves =
                 self.pieces
                     .get_moves_from_position(ox as usize, oy as usize, id, &self.board);

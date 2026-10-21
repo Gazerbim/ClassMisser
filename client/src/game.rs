@@ -154,6 +154,17 @@ impl Game {
                     }
                     None => {}
                 };
+                match response.data["player_playing"].as_i64() {
+                    Some(v) => {
+                        match v {
+                            0..=3 => {
+                                self.is_playing = v as i32;
+                            }
+                            _ => {}
+                        }
+                    }
+                    None => {}
+                };
                 if !broken {
                     self.board.update(x, y, p);
                 }

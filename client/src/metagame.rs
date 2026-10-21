@@ -79,6 +79,10 @@ impl Metagame {
             } else if action == "Créer un salon".to_string() {
                 self.state = State::CreateLobby;
             }
+            
+            if self.engine.is_key_pressed(console_engine::KeyCode::Esc) {
+                return true; // exits app
+            }
         } else if self.state == State::EnterPseudo {
             self.enter_username.handling_events(&self.engine);
             if self.engine.is_key_pressed(console_engine::KeyCode::Esc) {
