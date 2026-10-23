@@ -1,3 +1,4 @@
+pub mod account_manager;
 pub mod clients;
 pub mod game;
 pub mod game_services;
