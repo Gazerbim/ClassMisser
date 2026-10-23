@@ -57,6 +57,10 @@ impl Board {
         }
     }
 
+    pub fn board_size(&self) -> usize {
+        self.board_size
+    }
+
     pub fn init(&mut self, board_size: usize, team_number: i8) {
         self.team_number = team_number;
         self.board_size = board_size;
@@ -87,11 +91,11 @@ impl Board {
         self.selected_piece = (x, y);
     }
 
-    fn clear_highlights(&mut self) {
+    pub fn clear_highlights(&mut self) {
         self.to_highlight.clear();
     }
 
-    fn set(&mut self, x: usize, y: usize, value: i8) {
+    pub fn set(&mut self, x: usize, y: usize, value: i8) {
         self.data[(y, x)] = value;
     }
 

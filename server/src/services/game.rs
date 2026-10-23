@@ -220,79 +220,211 @@ impl Game {
         }
     }
 
-    pub fn handle_request(&mut self, sender: i8, header: &str, data: &Value) -> (i8, String) {
+    pub fn handle_request(
+        &mut self,
+        sender: i8,
+        header: &str,
+        data: &Value,
+    ) -> (i8, String) {
         match header {
-            "piece_moves" => match data["x"].as_i64() {
-                Some(_x) => match data["y"].as_i64() {
-                    Some(_y) => {
-                        let moves = self.get_moves_for_piece(_x as usize, _y as usize);
-                        let mut x_pos = Vec::new();
-                        let mut y_pos = Vec::new();
-                        for m in moves {
-                            x_pos.push(m.x);
-                            y_pos.push(m.y);
-                        }
-                        let message = serde_json::json!({
-                            "type": "game",
-                            "header": "piece_moves",
-                            "data": {
-                                "x": x_pos,
-                                "y": y_pos
-                            }
-                        })
-                        .to_string()
-                            + "$";
-                        println!("send to: {}", sender);
-                        println!("{}", message);
-                        (sender, message)
+            "piece_moves" => {
+                let (x, y) = match (
+                    data["x"].as_u64(),
+                    data["y"].as_u64(),
+                ) {
+                    (Some(x), Some(y)) => (x as usize, y as usize),
+                    _ => return (-1, String::new()),
+                };
+
+                if x >= self.board.board_size()
+                    || y >= self.board.board_size()
+                {
+                    return (-1, String::new());
+                }
+
+                let moves = self.get_moves_for_piece(x, y);
+                let mut xs = Vec::new();
+                let mut ys = Vec::new();
+
+                for m in moves {
+                    xs.push(m.x);
+                    ys.push(m.y);
+                }
+
+                let message = serde_json::json!({
+                    "type": "game",
+                    "header": "piece_moves",
+                    "data": {
+                        "x": xs,
+                        "y": ys
                     }
-                    None => (-1, "".to_string()),
-                },
-                None => (-1, "".to_string()),
-            },
-            "move_piece" => match (
-                data["ox"].as_i64(),
-                data["oy"].as_i64(),
-                data["nx"].as_i64(),
-                data["ny"].as_i64(),
-            ) {
-                (Some(ox), Some(oy), Some(nx), Some(ny)) => {
-                    if ox > 0 && oy > 0 && nx > 0 && ny > 0 {
-                        let (x, y, p) =
-                            self.try_move_piece(ox as i8, oy as i8, nx as i8, ny as i8, sender);
-                        if x.len() == 0 || y.len() == 0 || p.len() == 0 {
-                            println!("invalid move, no possible moves");
-                            return (-1, "".to_string());
+                })
+                .to_string() + "$";
+
+                (sender, message)
+            }
+
+            "move_piece" => {
+                let (ox, oy, nx, ny) = match (
+                    data["ox"].as_u64(),
+                    data["oy"].as_u64(),
+                    data["nx"].as_u64(),
+                    data["ny"].as_u64(),
+                ) {
+                    (Some(ox), Some(oy), Some(nx), Some(ny)) => (
+                        ox as usize,
+                        oy as usize,
+                        nx as usize,
+                        ny as usize,
+                    ),
+                    _ => return (-1, String::new()),
+                };
+
+                let size = self.board.board_size();
+
+                if ox >= size || oy >= size || nx >= size || ny >= size {
+                    return (-1, String::new());
+                }
+
+                // Uniquement le joueur actif peut déplacer une pièce.
+                if sender != self.player_playing {
+                    return (-1, String::new());
+                }
+
+                let (x, y, p) = self.try_move_piece(
+                    ox as i8,
+                    oy as i8,
+                    nx as i8,
+                    ny as i8,
+                    sender,
+                );
+
+                if x.is_empty() || y.is_empty() || p.is_empty() {
+                    return (-1, String::new());
+                }
+
+                // Ne pas changer player_playing ici :
+                // le joueur doit encore choisir une pièce à faire apparaître.
+                let message = serde_json::json!({
+                    "type": "game",
+                    "header": "update_board",
+                    "data": {
+                        "x": x,
+                        "y": y,
+                        "pieces": p,
+                        "player_playing": self.player_playing,
+                        "players_points": self.players_points,
+                    }
+                })
+                .to_string() + "$";
+
+                (-1, message)
+            }
+
+            "spawn_piece" => {
+                let reject = || {
+                    let message = serde_json::json!({
+                        "type": "game",
+                        "header": "spawn_rejected",
+                        "data": {}
+                    }).to_string() + "$";
+
+                    (sender, message)
+                };
+
+                let (piece, x, y) = match (
+                    data["piece"].as_i64(),
+                    data["x"].as_u64(),
+                    data["y"].as_u64(),
+                ) {
+                    (Some(p), Some(x), Some(y)) => (p as i8, x as usize, y as usize),
+                    _ => return reject(),
+                };
+
+                if sender != self.player_playing
+                    || sender < 0
+                    || sender >= self.team_number
+                {
+                    return reject();
+                }
+
+                let size = self.board.board_size();
+                let count = self.pieces.get_number_of_different_pieces();
+
+                if piece < 1
+                    || piece > count
+                    || x >= size
+                    || y >= size
+                    || self.board.get(x, y) != 0
+                {
+                    return reject();
+                }
+
+                let Some(cost) = self.pieces.get_piece_cost(piece) else {
+                    return reject();
+                };
+
+                if cost < 0 || self.players_points[sender as usize] < cost as usize {
+                    return reject();
+                }
+
+                let king_id = match sender {
+                    0 => -5,
+                    1 => -4,
+                    2 => -3,
+                    3 => -2,
+                    _ => return reject(),
+                };
+
+                let mut king_position = None;
+
+                for ky in 0..size {
+                    for kx in 0..size {
+                        if self.board.get(kx, ky) == king_id {
+                            king_position = Some((kx, ky));
+                            break;
                         }
-                        self.player_playing = (self.player_playing + 1) % self.team_number;
-                        
-                        return(
-                            -1,
-                            serde_json::json!({
-                                "type": "game",
-                                "header": "update_board",
-                                "data": {
-                                    "x": x,
-                                    "y": y,
-                                    "pieces": p,
-                                    "player_playing": self.player_playing,
-                                }
-                            })
-                            .to_string()
-                                + "$",
-                        );
-                        
-                    } else {
-                        println!("invalid move, out of bounds");
-                        (-1, "".to_string())
+                    }
+
+                    if king_position.is_some() {
+                        break;
                     }
                 }
-                (None, _, _, _) => (-1, "".to_string()),
-                (_, None, _, _) => (-1, "".to_string()),
-                (_, _, None, _) => (-1, "".to_string()),
-                (_, _, _, None) => (-1, "".to_string()),
-            },
-            _ => (-1, "".to_string()),
+
+                let Some((kx, ky)) = king_position else {
+                    return reject();
+                };
+
+                let dx = (x as isize - kx as isize).abs();
+                let dy = (y as isize - ky as isize).abs();
+
+                if dx > 1 || dy > 1 || (dx == 0 && dy == 0) {
+                    return reject();
+                }
+
+                let piece_id = piece + sender * count;
+
+                // Modification de l'état uniquement après validation complète.
+                self.players_points[sender as usize] -= cost as usize;
+                self.board.set(x, y, piece_id);
+                self.player_playing = (self.player_playing + 1) % self.team_number;
+
+                let message = serde_json::json!({
+                    "type": "game",
+                    "header": "update_board",
+                    "data": {
+                        "x": [x],
+                        "y": [y],
+                        "pieces": [piece_id],
+                        "player_playing": self.player_playing,
+                        "players_points": self.players_points
+                    }
+                }).to_string() + "$";
+
+                (-1, message)
+            }
+
+            _ => (-1, String::new()),
         }
     }
 
@@ -323,13 +455,17 @@ impl Game {
                     .get_moves_from_position(ox as usize, oy as usize, id, &self.board);
             for m in moves {
                 if m.x == nx && m.y == ny {
-                    //move effectivement possible
-                    let eaten =
-                        self.board
-                            .move_piece(ox as usize, oy as usize, nx as usize, ny as usize);
-                    if eaten > 0 {
-                        self.players_points[self.player_playing as usize] += 1;
-                    }
+                    // Le déplacement est légal.
+                    self.board.move_piece(
+                        ox as usize,
+                        oy as usize,
+                        nx as usize,
+                        ny as usize,
+                    );
+
+                    // Chaque déplacement légal rapporte un point.
+                    self.players_points[player as usize] += 1;
+
                     return (
                         vec![nx as usize, ox as usize],
                         vec![ny as usize, oy as usize],
@@ -339,5 +475,43 @@ impl Game {
             }
         }
         (Vec::new(), Vec::new(), Vec::new())
+    }
+
+    fn is_spawn_position_valid(
+        &self,
+        player: i8,
+        x: usize,
+        y: usize,
+    ) -> bool {
+        let size = self.board.board_size();
+
+        if player < 0
+            || player >= self.team_number
+            || x >= size
+            || y >= size
+            || self.board.get(x, y) != 0
+        {
+            return false;
+        }
+
+        // Les rois sont représentés par -5, -4, -3 et -2.
+        let king_id = -(5 - player);
+
+        // Recherche du roi sur le plateau
+        let king = (0..size).find_map(|ky| {
+            (0..size)
+                .find(|&kx| self.board.get(kx, ky) == king_id)
+                .map(|kx| (kx, ky))
+        });
+
+        let Some((kx, ky)) = king else {
+            return false;
+        };
+
+        let dx = (x as isize - kx as isize).abs();
+        let dy = (y as isize - ky as isize).abs();
+
+        // Les 8 cases voisines, diagonales comprises.
+        dx <= 1 && dy <= 1 && (dx != 0 || dy != 0)
     }
 }

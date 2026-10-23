@@ -8,11 +8,93 @@ pub struct Board {
     selected: (usize, usize),
     selected_piece: (usize, usize),
     to_highlight: Vec<Move>,
-    board_size: usize,
+    pub board_size: usize,
     team_number: i8,
 }
 
 impl Board {
+
+    pub fn board_size(&self) -> usize {
+        self.board_size
+    }
+
+    pub fn set_selected(&mut self, x: usize, y: usize) {
+        if x < self.board_size && y < self.board_size {
+            self.selected = (x, y);
+        }
+    }
+
+    pub fn is_empty(&self, x: usize, y: usize) -> bool {
+        self.get(x, y) == 0
+    }
+
+        
+    pub fn get_spawn_positions(
+        &self,
+        player: i8,
+    ) -> Vec<(usize, usize)> {
+        let n = self.board_size;
+
+        if n == 0 || player < 0 || player >= self.team_number {
+            return Vec::new();
+        }
+
+        // Identifiants des rois définis par le serveur.
+        let king_id = match player {
+            0 => -5,
+            1 => -4,
+            2 => -3,
+            3 => -2,
+            _ => return Vec::new(),
+        };
+
+        // Recherche de la position actuelle du roi.
+        let mut king_position = None;
+
+        for y in 0..n {
+            for x in 0..n {
+                if self.get(x, y) == king_id {
+                    king_position = Some((x, y));
+                    break;
+                }
+            }
+
+            if king_position.is_some() {
+                break;
+            }
+        }
+
+        let Some((kx, ky)) = king_position else {
+            return Vec::new();
+        };
+
+        let mut positions = Vec::new();
+
+        for dy in -1_i32..=1 {
+            for dx in -1_i32..=1 {
+                if dx == 0 && dy == 0 {
+                    continue;
+                }
+
+                let x = kx as i32 + dx;
+                let y = ky as i32 + dy;
+
+                if x < 0 || y < 0 || x >= n as i32 || y >= n as i32 {
+                    continue;
+                }
+
+                let position = (x as usize, y as usize);
+
+                if self.is_empty(position.0, position.1) {
+                    positions.push(position);
+                }
+            }
+        }
+
+        positions
+    }
+
+
     pub fn new() -> Board {
         //let grid: Array2D<i8> = Array2D::filled_with(0, board_size, board_size);
         let grid: Array2D<i8> = Array2D::filled_with(0, 1, 1);

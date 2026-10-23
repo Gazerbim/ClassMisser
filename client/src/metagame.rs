@@ -128,7 +128,7 @@ impl Metagame {
                 self.state = State::Home;
             }
             self.game
-                .handling_hevents(&self.engine, self.in_lobby.get_name());
+                .handling_hevents(&mut self.engine, self.in_lobby.get_name());
             self.chat.handling_events();
         }
         false

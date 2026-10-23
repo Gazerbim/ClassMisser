@@ -11,4 +11,7 @@ pub enum State {
 #[derive(PartialEq)]
 pub enum GameState {
     WaitInit,
+    WaitPlay,
+    WaitChoosePiece,
+    WaitEnd,
 }

@@ -111,4 +111,16 @@ impl Pieces {
 
         return moves;
     }
+    pub fn get_piece_cost(&self, local_id: i8) -> Option<i8> {
+        if local_id < 1 || local_id > self.number_of_different_pieces {
+            return None;
+        }
+
+        self.pieces
+            .iter()
+            .find(|piece| piece.index % self.number_of_different_pieces == local_id
+                || piece.index % self.number_of_different_pieces == 0
+                    && local_id == self.number_of_different_pieces)
+            .map(|piece| piece.get_cost())
+    }
 }
