@@ -196,6 +196,9 @@ pub struct Game {
     pub team_number: i8,
     player_playing: i8,
     players_points: [usize; 4],
+    // true une fois que le joueur qui joue a move une piece pdt son tour.
+    // tour = 1 déplacement, puis (optionnellement) 1 pièce à faire apparaître.
+    has_moved: bool,
 }
 
 impl Game {
@@ -207,6 +210,7 @@ impl Game {
             team_number: team_number,
             player_playing: 0,
             players_points: [0, 0, 0, 0],
+            has_moved: false,
         }
     }
 
@@ -217,7 +221,32 @@ impl Game {
             team_number: 0,
             player_playing: 0,
             players_points: [0, 0, 0, 0],
+            has_moved: false,
         }
+    }
+
+    /// passe la main au joueur suivant.
+    fn end_turn(&mut self) {
+        self.has_moved = false;
+        self.player_playing = (self.player_playing + 1) % self.team_number;
+    }
+
+    /// message sans données (par ex un refus) à destination d'un seul joueur
+    fn simple_message(header: &str) -> String {
+        serde_json::json!({
+            "type": "game",
+            "header": header,
+            "data": {}
+        })
+        .to_string()
+            + "$"
+    }
+
+    /// true si la case contient une pièce appartenant à un player en particulier
+    fn is_piece_of(&self, cell: i8, player: i8) -> bool {
+        let count = self.pieces.get_number_of_different_pieces() as i32;
+        let local = cell as i32 - player as i32 * count;
+        cell > 0 && local >= 1 && local <= count
     }
 
     pub fn handle_request(
@@ -238,6 +267,13 @@ impl Game {
 
                 if x >= self.board.board_size()
                     || y >= self.board.board_size()
+                {
+                    return (-1, String::new());
+                }
+                //bug du unpack 'id not in pieces' corrige
+                if sender != self.player_playing
+                    || self.has_moved
+                    || !self.is_piece_of(self.board.get(x, y), sender)
                 {
                     return (-1, String::new());
                 }
@@ -286,9 +322,13 @@ impl Game {
                     return (-1, String::new());
                 }
 
-                // Uniquement le joueur actif peut déplacer une pièce.
+                //seul le joueur actif peut deplacer une piece
                 if sender != self.player_playing {
                     return (-1, String::new());
+                }
+
+                if self.has_moved {
+                    return (sender, Self::simple_message("move_rejected"));
                 }
 
                 let (x, y, p) = self.try_move_piece(
@@ -300,11 +340,20 @@ impl Game {
                 );
 
                 if x.is_empty() || y.is_empty() || p.is_empty() {
-                    return (-1, String::new());
+                    // coup illégal : on previent le joueur pour qu'il puisse rejouer.
+                    return (sender, Self::simple_message("move_rejected"));
                 }
 
-                // Ne pas changer player_playing ici :
-                // le joueur doit encore choisir une pièce à faire apparaître.
+                self.has_moved = true;
+
+                // le joueur doit faire apparaitre une piece sauf s'il a pas assez de thunasse
+                if !self
+                    .pieces
+                    .can_afford_any(self.players_points[sender as usize])
+                {
+                    self.end_turn();
+                }
+
                 let message = serde_json::json!({
                     "type": "game",
                     "header": "update_board",
@@ -344,6 +393,7 @@ impl Game {
                 if sender != self.player_playing
                     || sender < 0
                     || sender >= self.team_number
+                    || !self.has_moved
                 {
                     return reject();
                 }
@@ -404,10 +454,10 @@ impl Game {
 
                 let piece_id = piece + sender * count;
 
-                // Modification de l'état uniquement après validation complète.
+                // modification de l'etat uniquement après validation
                 self.players_points[sender as usize] -= cost as usize;
                 self.board.set(x, y, piece_id);
-                self.player_playing = (self.player_playing + 1) % self.team_number;
+                self.end_turn();
 
                 let message = serde_json::json!({
                     "type": "game",
@@ -420,6 +470,31 @@ impl Game {
                         "players_points": self.players_points
                     }
                 }).to_string() + "$";
+
+                (-1, message)
+            }
+
+            // skip spawn du player
+            "skip_spawn" => {
+                if sender != self.player_playing || !self.has_moved {
+                    return (-1, String::new());
+                }
+
+                self.end_turn();
+
+                let message = serde_json::json!({
+                    "type": "game",
+                    "header": "update_board",
+                    "data": {
+                        "x": Vec::<usize>::new(),
+                        "y": Vec::<usize>::new(),
+                        "pieces": Vec::<i8>::new(),
+                        "player_playing": self.player_playing,
+                        "players_points": self.players_points
+                    }
+                })
+                .to_string()
+                    + "$";
 
                 (-1, message)
             }
@@ -445,8 +520,7 @@ impl Game {
         //vérifier légalité mouvement
         let id = self.board.get(ox as usize, oy as usize);
         println!(" id {} - player {}*{}", id, player, self.pieces.get_number_of_different_pieces());
-        if id - player * self.pieces.get_number_of_different_pieces() >= 1
-        
+        if self.is_piece_of(id, player)
         {
             //la pièce appartient bien au joueur
             println!("player {} is playing et la piece appartient au joueur", player);
@@ -462,6 +536,13 @@ impl Game {
                         nx as usize,
                         ny as usize,
                     );
+
+                    //si on mange une piece, on ajoute les points du joueur
+                    let eaten_piece = self.board.get(nx as usize, ny as usize);
+                    if eaten_piece > 0 {
+                        let eaten_piece_cost = self.pieces.get_piece_cost(eaten_piece).unwrap_or(0);
+                        self.players_points[player as usize] += eaten_piece_cost as usize;
+                    }
 
                     // Chaque déplacement légal rapporte un point.
                     self.players_points[player as usize] += 1;

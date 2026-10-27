@@ -20,6 +20,8 @@ pub struct Game {
     spawn_positions: Vec<(usize, usize)>,
     selected_spawn: usize,
     previous_cursor: (usize, usize),
+    awaiting_move: bool,
+    team_number: i8,
 }
 
 impl Game {
@@ -38,6 +40,8 @@ impl Game {
             spawn_positions: Vec::new(),
             selected_spawn: 0,
             previous_cursor: (0, 0),
+            awaiting_move: false,
+            team_number: 4,
         }
     }
 
@@ -83,9 +87,21 @@ impl Game {
         self.board.init(board_size, team_number, xc, yc, all_pieces);
         self.color = color;
         self.is_playing = 0;
-        if self.color == self.is_playing {
-            self.state = GameState::WaitPlay;
-        }
+        self.team_number = team_number;
+
+        // restore base state.
+        self.players_points = [0; 4];
+        self.selected_piece = 0;
+        self.choosing_spawn = false;
+        self.spawn_positions.clear();
+        self.selected_spawn = 0;
+        self.awaiting_move = false;
+        self.pending_request = "".to_string();
+        self.state = if self.color == self.is_playing {
+            GameState::WaitPlay
+        } else {
+            GameState::WaitInit
+        };
     }
 
     pub fn handle_server(&mut self, response: Response) {
@@ -136,24 +152,7 @@ impl Game {
                     }
                 }
 
-                if let Some(player) = response.data["player_playing"].as_i64() {
-                    if (0..=3).contains(&player) {
-                        self.is_playing = player as i32;
-
-                        // IMPORTANT : ne pas écraser l'état du menu
-                        // lorsqu'on reçoit l'update après un déplacement.
-                        if self.state != GameState::WaitChoosePiece
-                            && !self.choosing_spawn
-                        {
-                            self.state = if self.is_playing == self.color {
-                                GameState::WaitPlay
-                            } else {
-                                GameState::WaitEnd
-                            };
-                        }
-                    }
-                }
-
+                // Les points d'abord : le menu de choix de pièce en dépend.
                 if let Some(points) = response.data["players_points"].as_array() {
                     for (i, point) in points.iter().enumerate().take(4) {
                         if let Some(value) = point.as_u64() {
@@ -161,11 +160,43 @@ impl Game {
                         }
                     }
                 }
+
+                if let Some(player) = response.data["player_playing"].as_i64() {
+                    if (0..=3).contains(&player) {
+                        self.is_playing = player as i32;
+
+                        if self.is_playing != self.color {
+                            self.awaiting_move = false;
+                            self.choosing_spawn = false;
+                            self.spawn_positions.clear();
+                            self.state = GameState::WaitEnd;
+                        } else if self.awaiting_move {
+                            // choisir la piece a faire spawner
+                            self.awaiting_move = false;
+                            self.selected_piece = 0;
+                            self.state = GameState::WaitChoosePiece;
+                        } else if self.state != GameState::WaitChoosePiece
+                            && !self.choosing_spawn
+                        {
+                            self.state = GameState::WaitPlay;
+                        }
+                    }
+                }
             }
+
+            "move_rejected" => {
+                // Coup rejected -> rejouer
+                self.awaiting_move = false;
+                self.board.clear_highlights();
+                self.state = GameState::WaitPlay;
+            }
+
             "spawn_rejected" => {
                 self.choosing_spawn = false;
                 self.spawn_positions.clear();
                 self.selected_spawn = 0;
+                self.board
+                    .set_selected(self.previous_cursor.0, self.previous_cursor.1);
                 self.state = GameState::WaitChoosePiece;
             }
 
@@ -188,7 +219,7 @@ impl Game {
         e: &mut ConsoleEngine,
         lobby_name: String,
     ) {
-        // Phase 1 : choisir une case de spawn.
+        // choisir une case de spawn pour la pièce sélectionnée
         if self.choosing_spawn {
             if self.spawn_positions.is_empty() {
                 self.choosing_spawn = false;
@@ -216,6 +247,16 @@ impl Game {
                 self.board.set_selected(x, y);
             }
 
+            // backspace annule le choix de la case et  revient au menu des pièces.
+            if e.is_key_pressed(KeyCode::Backspace) {
+                self.choosing_spawn = false;
+                self.spawn_positions.clear();
+                self.selected_spawn = 0;
+                self.board
+                    .set_selected(self.previous_cursor.0, self.previous_cursor.1);
+                return;
+            }
+
             if e.is_key_pressed(KeyCode::Char(' ')) {
                 if let Some(&(x, y)) =
                     self.spawn_positions.get(self.selected_spawn)
@@ -232,9 +273,11 @@ impl Game {
                     })
                     .to_string() + "$";
 
-                    // Le serveur confirmera le spawn dans update_board.
+                    // le serveur dit si c'est good ou pas donc on attend sa réponse avant de quitter le menu
                     self.choosing_spawn = false;
                     self.spawn_positions.clear();
+                    self.board
+                        .set_selected(self.previous_cursor.0, self.previous_cursor.1);
                     self.state = GameState::WaitEnd;
                 }
             }
@@ -242,8 +285,23 @@ impl Game {
             return;
         }
 
-        // Phase 2 : choisir une pièce que le joueur peut acheter.
+        // choisir une piece que le joueur peut acheter
         if self.state == GameState::WaitChoosePiece {
+            // 'P' ne rien acheter et terminer son tour
+            if e.is_key_pressed(KeyCode::Char('p')) || e.is_key_pressed(KeyCode::Char('P')) {
+                self.pending_request = serde_json::json!({
+                    "type": "game",
+                    "header": "skip_spawn",
+                    "data": {
+                        "lobby_name": lobby_name
+                    }
+                })
+                .to_string()
+                    + "$";
+                self.state = GameState::WaitEnd;
+                return;
+            }
+
             let affordable = self.affordable_pieces();
 
             if affordable.is_empty() {
@@ -305,7 +363,7 @@ impl Game {
             return;
         }
 
-        // Phase 3 : déplacement normal.
+        // deplacement normal
         if e.is_key_pressed(KeyCode::Right)
             || e.is_key_pressed(KeyCode::Char('l'))
         {
@@ -361,8 +419,8 @@ impl Game {
                 })
                 .to_string() + "$";
 
-                self.selected_piece = 0;
-                self.state = GameState::WaitChoosePiece;
+                self.awaiting_move = true;
+                self.state = GameState::WaitEnd;
             }
         }
     }
@@ -374,15 +432,17 @@ impl Game {
 
     
     pub fn display(&mut self, e: &mut ConsoleEngine) {
-        // Afficher le plateau une seule fois.
+        // Afficher le plateau
         self.board.display(e, &self.pieces, &self.team_colors);
 
+        // message d'attente
         if self.is_playing != self.color {
-            e.print(4, 30, "Un autre joueur est en train de jouer...");
+            let status_y = (self.board.board_size() * 3) as i32;
+            e.print(0, status_y, "Un autre joueur est en train de jouer...");
         }
 
-        // Afficher le menu de sélection par-dessus le plateau.
-        if self.state == GameState::WaitChoosePiece {
+        // afficher le menu de sélection par-dessus le plateau
+        if self.state == GameState::WaitChoosePiece && !self.choosing_spawn {
             self.display_all_pieces(
                 e,
                 self.color as i8,
@@ -390,14 +450,15 @@ impl Game {
             );
         }
 
-        // Pendant le choix de la case de spawn, indiquer les commandes.
+        // indication des commandes
         if self.choosing_spawn {
+            e.fill_rect(0, 0, 59, 4, pixel::pxl(' '));
             e.print(2, 1, "Choisissez une case de spawn");
             e.print(2, 2, "Gauche/Droite : changer de case");
-            e.print(2, 3, "Espace : confirmer");
+            e.print(2, 3, "Espace : confirmer | Retour arriere : annuler");
         }
 
-        // Informations des joueurs sous le plateau.
+        // informations des joueurs sous le plateau.
         self.display_players_info(e);
     }
 
@@ -410,18 +471,34 @@ impl Game {
         team_colors: [Color; 4],
     ) {
         let count = self.pieces.get_number_of_different_pieces() as usize;
+        let points = self.players_points.get(team as usize).copied().unwrap_or(0);
+        let affordable = self.affordable_pieces();
 
-        e.print(2, 1, "CHOIX DE LA PIECE A SPAWNER");
-        e.print(2, 2, "Gauche/Droite : choisir | Espace : continuer");
+        // fond du menu
+        e.fill_rect(0, 0, 59, 10, pixel::pxl(' '));
+
+        e.print(
+            2,
+            1,
+            &format!("CHOIX DE LA PIECE A SPAWNER  (vos points : {})", points),
+        );
+        e.print(
+            2,
+            2,
+            "Gauche/Droite : choisir | Espace : valider | P : passer",
+        );
 
         if count == 0 {
             e.print(2, 4, "Aucune piece disponible.");
             return;
         }
 
-        // Vérifier que la sélection est valide.
-        if self.selected_piece == 0 || self.selected_piece > count {
-            self.selected_piece = 1;
+        if affordable.is_empty() {
+            e.print(
+                2,
+                9,
+                "Pas assez de points pour une piece : appuyez sur P pour passer.",
+            );
         }
 
         let columns = 6;
@@ -429,51 +506,42 @@ impl Game {
         let spacing_y = 4;
 
         for i in 1..=count {
-            let piece_id =
-                i as i8 + team * self.pieces.get_number_of_different_pieces() as i8;
-
+            let piece_id = i as i8 + team * count as i8;
             let piece = self.pieces.get_piece_from_id(piece_id);
+            let cost = self.pieces.get_piece_cost(i as i8, team).unwrap_or(0);
 
             let x = 2 + ((i - 1) % columns) as i32 * spacing_x;
             let y = 5 + ((i - 1) / columns) as i32 * spacing_y;
 
-            let selected = i == self.selected_piece;
+            let can_buy = affordable.contains(&i);
+            let selected = can_buy && i == self.selected_piece;
 
-            // Marqueur visuel pour la pièce actuellement sélectionnée.
-            if selected {
-                e.print(x, y - 1, ">");
+            // marqueur visuel pour la pièce actuellement sélectionnée.
+            e.print(x, y - 1, if selected { ">" } else { " " });
+
+            // nom de la pièce et son prix -> grisé si pas assez de points
+            let label = format!("{} {} pts", piece.label, cost);
+            if can_buy {
+                e.print(x, y, &label);
             } else {
-                e.print(x, y - 1, " ");
+                e.print_fbg(x, y, &label, Color::DarkGrey, Color::Reset);
             }
 
-            // Nom de la pièce.
-            e.print(x, y, &format!("{}", piece.label));
-
-            // Soulignement coloré.
+            // soulignement colore
             let color = if selected {
                 Color::White
-            } else {
+            } else if can_buy {
                 team_colors[team as usize]
+            } else {
+                Color::DarkGrey
             };
 
-            e.line(
-                x,
-                y + 1,
-                x + 5,
-                y + 1,
-                pixel::pxl_fg('-', color),
-            );
+            e.line(x, y + 1, x + 5, y + 1, pixel::pxl_fg('-', color));
 
             if selected {
                 e.print(x, y + 2, "Selectionnee");
             }
         }
-
-        e.print(
-            2,
-            24,
-            &format!("Piece choisie : {}/{}", self.selected_piece, count),
-        );
     }
 
 
@@ -482,7 +550,9 @@ impl Game {
 
         e.print(0, y, "Joueurs :");
 
-        for player in 0..4 {
+        let teams = (self.team_number.max(0) as usize).min(4);
+
+        for player in 0..teams {
             let status = if player == self.is_playing as usize {
                 " <-- joue"
             } else {
@@ -501,6 +571,11 @@ impl Game {
     }
 
     fn affordable_pieces(&self) -> Vec<usize> {
+        // spectateur (couleur >= 4) ou partie non initialisée : rien à acheter.
+        if self.color < 0 || self.color as usize >= self.players_points.len() {
+            return Vec::new();
+        }
+
         let count = self.pieces.get_number_of_different_pieces() as usize;
 
         (1..=count)

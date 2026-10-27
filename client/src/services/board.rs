@@ -39,7 +39,7 @@ impl Board {
             return Vec::new();
         }
 
-        // Identifiants des rois définis par le serveur.
+        // identifiants des rois definis par le serveur.
         let king_id = match player {
             0 => -5,
             1 => -4,
@@ -48,7 +48,7 @@ impl Board {
             _ => return Vec::new(),
         };
 
-        // Recherche de la position actuelle du roi.
+        // recherche de la position actuelle du roi.
         let mut king_position = None;
 
         for y in 0..n {

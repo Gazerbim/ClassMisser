@@ -122,6 +122,42 @@
 {
 		"request": {
 			"type": "game",
+			"header": "spawn_piece",
+			"data": "{ piece: usize, x: usize, y: usize, lobby_name: String }"
+		},
+		"response": {
+			"type": "game",
+			"header": "update_board | spawn_rejected",
+			"data": "{ x: [usize], y: [usize], pieces: [i8], player_playing: i8, players_points: [usize] } | {}"
+		}
+	},
+	{
+		"request": {
+			"type": "game",
+			"header": "skip_spawn",
+			"data": "{ lobby_name: String }"
+		},
+		"response": {
+			"type": "game",
+			"header": "update_board",
+			"data": "{ x: [], y: [], pieces: [], player_playing: i8, players_points: [usize] }"
+		}
+	},
+	{
+		"request": {
+			"type": "game",
+			"header": "move_piece (coup illegal ou 2e coup dans le tour)",
+			"data": "{ ox, oy, nx, ny, lobby_name }"
+		},
+		"response": {
+			"type": "game",
+			"header": "move_rejected",
+			"data": "{}"
+		}
+	},
+	{
+		"request": {
+			"type": "game",
 			"header": "quitted_game",
 			"data": "{}"
 		},

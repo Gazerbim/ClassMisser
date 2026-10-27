@@ -457,11 +457,21 @@ impl Server {
     fn handle_start_game(&mut self, sender: Token, data: &Value) -> io::Result<()> {
         // let player = self.players.get_player(sender).unwrap();
         // let lobby: usize = player.lobby.unwrap();
-        let n = data["players"].as_i64().unwrap();
+        let n = data["players"].as_i64().unwrap_or(0);
         let mut id = -1;
         if n > 1 && n < 5 {
             id = self.lobbies.get_player_lobby_id(sender);
         }
+
+        let mut n = n;
+        if id != -1 {
+            let present = self.lobbies.get_clients_from_lobby(id as usize).len() as i64;
+            n = n.min(present);
+            if n < 2 {
+                id = -1;
+            }
+        }
+
         if id != -1 {
             let id = id as usize;
             let n = n as i8;

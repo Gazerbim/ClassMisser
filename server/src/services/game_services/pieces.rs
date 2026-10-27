@@ -59,22 +59,26 @@ impl Pieces {
 
     pub fn get_moves_from_position(&self, x: usize, y: usize, id: i8, board: &Board) -> Vec<Move> {
         let piece = self.get_piece_from_id(id);
+        let my_team = piece.team;
+        let size = board.get_board_size() as i8;
         let mut moves = Vec::new();
 
         for m in &piece.moves {
-            let mut i: i8 = 0;
-            let mut new_x = m.x + x as i8;
-            let mut new_y = m.y + y as i8;
+            let mut step: i8 = 1;
 
-            while new_x >= 0
-                && new_x < board.get_board_size() as i8
-                && new_y >= 0
-                && new_y < board.get_board_size() as i8
-            {
-                if (board.get(new_x as usize, new_y as usize) == -1)
+            loop {
+                let new_x = m.x * step + x as i8;
+                let new_y = m.y * step + y as i8;
+
+                if new_x < 0 || new_x >= size || new_y < 0 || new_y >= size {
+                    break;
+                }
+
+                let cell = board.get(new_x as usize, new_y as usize);
+
+                if cell == -1
                     || (board.is_occupied(new_x as usize, new_y as usize)
-                        && self.get_team(board.get(new_x as usize, new_y as usize))
-                            == self.get_team(board.get(x, y)))
+                        && self.get_team(cell) == my_team)
                 {
                     break;
                 }
@@ -85,9 +89,7 @@ impl Pieces {
                     break;
                 }
 
-                i += 1;
-                new_x = m.x * i + x as i8;
-                new_y = m.y * i + y as i8;
+                step += 1;
             }
         }
 
@@ -95,14 +97,9 @@ impl Pieces {
             let new_x = m.x + x as i8;
             let new_y = m.y + y as i8;
 
-            if new_x >= 0
-                && new_x < board.get_board_size() as i8
-                && new_y >= 0
-                && new_y < board.get_board_size() as i8
-            {
+            if new_x >= 0 && new_x < size && new_y >= 0 && new_y < size {
                 if board.is_occupied(new_x as usize, new_y as usize)
-                    && self.get_team(board.get(new_x as usize, new_y as usize))
-                        != self.get_team(board.get_selected_piece_id())
+                    && self.get_team(board.get(new_x as usize, new_y as usize)) != my_team
                 {
                     moves.push(Move { x: new_x, y: new_y });
                 }
@@ -111,6 +108,7 @@ impl Pieces {
 
         return moves;
     }
+
     pub fn get_piece_cost(&self, local_id: i8) -> Option<i8> {
         if local_id < 1 || local_id > self.number_of_different_pieces {
             return None;
@@ -122,5 +120,17 @@ impl Pieces {
                 || piece.index % self.number_of_different_pieces == 0
                     && local_id == self.number_of_different_pieces)
             .map(|piece| piece.get_cost())
+    }
+
+    pub fn get_all_costs(&self) -> Vec<i8> {
+        (1..=self.number_of_different_pieces)
+            .filter_map(|id| self.get_piece_cost(id))
+            .collect()
+    }
+
+    pub fn can_afford_any(&self, points: usize) -> bool {
+        self.get_all_costs()
+            .iter()
+            .any(|&cost| cost >= 0 && points >= cost as usize)
     }
 }
