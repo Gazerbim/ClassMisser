@@ -36,6 +36,10 @@ impl Piece {
         }
     }
 
+    pub fn get_cost(&self) -> i8 {
+        self.cost
+    }
+
     pub fn get_eating_moves(&self) -> &Vec<Move> {
         &self.eating_moves
     }

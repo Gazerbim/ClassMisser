@@ -170,7 +170,7 @@ impl Metagame {
                 self.state = State::Home;
             }
             self.game
-                .handling_hevents(&self.engine, self.in_lobby.get_name());
+                .handling_hevents(&mut self.engine, self.in_lobby.get_name());
             self.chat.handling_events();
         }
         false
@@ -341,6 +341,11 @@ impl Metagame {
     fn read_game_server_response(&mut self, response: Response) {
         match response.header.as_str() {
             "game_is_starting" => {
+                // Le serveur refuse de lancer la partie (ex : un seul joueur dans le salon) :
+                // on reste dans le salon au lieu de démarrer une partie vide.
+                if response.data["accept"].as_bool() == Some(false) {
+                    return;
+                }
                 let new_color = match response.data["color"].as_i64() {
                     Some(_c) => _c,
                     None => 5, //si au delà de 5, couleur spectateur
@@ -349,7 +354,7 @@ impl Metagame {
                     Some(_n) => _n as i8,
                     None => 4,
                 };
-                let size: usize = match response.data["board_game"].as_i64() {
+                let size: usize = match response.data["board_size"].as_i64() {
                     Some(_s) => _s as usize,
                     None => 9,
                 };

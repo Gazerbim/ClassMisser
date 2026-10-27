@@ -17,6 +17,10 @@ impl Pieces {
         }
     }
 
+    pub fn get_number_of_different_pieces(&self) -> i32 {
+        return self.unic_pieces as i32;
+    }
+
     pub fn load_pieces(&mut self, team_number: i8) -> bool {
         let content =
             std::fs::read_to_string("src/data/pieces.json").expect("error when reading the file");
@@ -45,7 +49,7 @@ impl Pieces {
         self.pieces
             .iter()
             .find(|piece| piece.index == id)
-            .expect("the id isnt in pieces")
+            .expect(&format!("Piece with id {} not found", id))
     }
 
     pub fn get_team(&self, id: i8) -> i8 {
@@ -54,5 +58,18 @@ impl Pieces {
 
     pub fn get_number_different_pieces(&self) -> i8 {
         self.unic_pieces
+    }
+
+    pub fn get_piece_cost(&self, local_id: i8, team: i8) -> Option<i8> {
+        if local_id < 1 || local_id > self.unic_pieces {
+            return None;
+        }
+
+        let global_id = local_id + team * self.unic_pieces;
+
+        self.pieces
+            .iter()
+            .find(|piece| piece.index == global_id)
+            .map(|piece| piece.get_cost())
     }
 }
