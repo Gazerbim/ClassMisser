@@ -20,6 +20,7 @@ pub struct Server {
     clients: Clients,
     poll: Poll,
     players: Players,
+    account_manager: AccountManager,
 }
 
 impl Server {
@@ -31,6 +32,7 @@ impl Server {
             clients: Clients::new(),
             poll: Poll::new().unwrap(),
             players: Players::new(),
+            account_manager: AccountManager::new(),
         }
     }
 
@@ -354,65 +356,78 @@ impl Server {
             request.request_type, request.header
         );
 
-        match (request.request_type.as_str(), request.header.as_str()) {
-            ("username", "give_new_username") => {
-                self.handle_give_new_username(sender, &request.data)?;
-            }
-
-            ("lobbies", _) => {
-                let mut receiver = sender.clone();
-                let response = self.lobbies.handle_request(
-                    sender,
-                    request.header.as_str(),
-                    &request.data,
-                    &mut receiver,
-                );
-                if response != String::from("") {
-                    self.send_to_client(receiver, &response)?;
+        if self.clients.get_connection_value(&sender) {
+            match (request.request_type.as_str(), request.header.as_str()) {
+                ("lobbies", _) => {
+                    let mut receiver = sender.clone();
+                    let response = self.lobbies.handle_request(
+                        sender,
+                        request.header.as_str(),
+                        &request.data,
+                        &mut receiver,
+                    );
+                    if response != String::from("") {
+                        self.send_to_client(receiver, &response)?;
+                    }
                 }
-            }
-            ("game", "start_game") => {
-                self.handle_start_game(sender, &request.data)?;
-            }
+                ("game", "start_game") => {
+                    self.handle_start_game(sender, &request.data)?;
+                }
 
-            ("game", _) => {
-                let lobby_name = request.data["lobby_name"].as_str().unwrap().to_string();
-                match self.lobbies.get_lobby_id_by_name(&lobby_name) {
-                    Some(id) => {
-                        let l = self.lobbies.list.get_mut(&id).unwrap();
-                        let (receiver, response) = l.handle_request(
-                            sender,
-                            "game",
-                            request.header.as_str(),
-                            &request.data,
-                        );
-                        if response != "".to_string() {
-                            if receiver == Token(0) {
-                                self.broadcast_to_lobby(id, response.as_str()).unwrap();
-                            } else {
-                                self.send_to_client(receiver, response.as_str()).unwrap();
+                ("game", _) => {
+                    let lobby_name = request.data["lobby_name"].as_str().unwrap().to_string();
+                    match self.lobbies.get_lobby_id_by_name(&lobby_name) {
+                        Some(id) => {
+                            let l = self.lobbies.list.get_mut(&id).unwrap();
+                            let (receiver, response) = l.handle_request(
+                                sender,
+                                "game",
+                                request.header.as_str(),
+                                &request.data,
+                            );
+                            if response != "".to_string() {
+                                if receiver == Token(0) {
+                                    self.broadcast_to_lobby(id, response.as_str()).unwrap();
+                                } else {
+                                    self.send_to_client(receiver, response.as_str()).unwrap();
+                                }
                             }
                         }
-                    }
-                    None => {
-                        println!("Lobby {} not found", lobby_name)
+                        None => {
+                            println!("Lobby {} not found", lobby_name)
+                        }
                     }
                 }
+
+                _ => {
+                    eprintln!(
+                        "Requête inconnue : {} / {}",
+                        request.request_type, request.header
+                    );
+
+                    // self.send_to_client(
+                    //     sender,
+                    //     &Self::make_response(
+                    //         "error",
+                    //         serde_json::json!({"message": "Unknown request"}),
+                    //     ),
+                    // )?;
+                }
             }
-
-            _ => {
-                eprintln!(
-                    "Requête inconnue : {} / {}",
-                    request.request_type, request.header
-                );
-
-                // self.send_to_client(
-                //     sender,
-                //     &Self::make_response(
-                //         "error",
-                //         serde_json::json!({"message": "Unknown request"}),
-                //     ),
-                // )?;
+        } else {
+            match (request.request_type.as_str(), request.header.as_str()) {
+                ("username", "connect") => {
+                    self.handle_new_connection(sender, &request.data)?;
+                }
+                ("username", "new_account") => {
+                    self.handle_new_account(sender, &request.data)?;
+                }
+                _ => {
+                    eprintln!(
+                        "Requête inconnue : {} / {}",
+                        request.request_type, request.header
+                    );
+                }
             }
         }
 
@@ -432,25 +447,88 @@ impl Server {
 
     // USERNAME
 
-    fn handle_give_new_username(&mut self, sender: Token, data: &Value) -> io::Result<()> {
+    fn handle_new_connection(&mut self, sender: Token, data: &Value) -> io::Result<()> {
         let username = data.get("username").and_then(Value::as_str).unwrap_or("");
+        let password = data.get("password").and_then(Value::as_str).unwrap_or("");
 
-        println!("Nouveau pseudo demandé : {}", username);
+        println!(
+            "Tentative de connection au compte {} avec le mot de passe {}",
+            username, password
+        );
 
-        let accepted = self
-            .players
-            .add_player(sender, Player::new(String::from(username)));
+        if self
+            .account_manager
+            .login(username.to_string(), password.to_string())
+        {
+            let accepted = self
+                .players
+                .add_player(sender, Player::new(String::from(username)));
 
-        self.send_to_client(
+            self.clients.set_client_connection_state(&sender, true);
+
+            return self.send_to_client(
+                sender,
+                &Self::make_response(
+                    "username",
+                    "connection",
+                    serde_json::json!({
+                        "accept": accepted
+                    }),
+                ),
+            );
+        }
+        return self.send_to_client(
             sender,
             &Self::make_response(
                 "username",
-                "is_username_available",
+                "connection",
                 serde_json::json!({
-                    "accept": accepted
+                    "accept": "false"
                 }),
             ),
-        )
+        );
+    }
+
+    fn handle_new_account(&mut self, sender: Token, data: &Value) -> io::Result<()> {
+        let username = data.get("username").and_then(Value::as_str).unwrap_or("");
+        let password = data.get("password").and_then(Value::as_str).unwrap_or("");
+
+        println!(
+            "Tentative de création du compte {} avec le mot de passe {}",
+            username, password
+        );
+
+        if self
+            .account_manager
+            .create_account(username.to_string(), password.to_string())
+        {
+            let accepted = self
+                .players
+                .add_player(sender, Player::new(String::from(username)));
+
+            self.clients.set_client_connection_state(&sender, true);
+
+            return self.send_to_client(
+                sender,
+                &Self::make_response(
+                    "username",
+                    "connection",
+                    serde_json::json!({
+                        "accept": accepted
+                    }),
+                ),
+            );
+        }
+        return self.send_to_client(
+            sender,
+            &Self::make_response(
+                "username",
+                "connection",
+                serde_json::json!({
+                    "accept": "false"
+                }),
+            ),
+        );
     }
 
     // GAME

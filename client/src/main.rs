@@ -29,18 +29,17 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let connected: bool = match args.action {
         Some(_a) => {
             if _a == "signup".to_string() {
-                //créer un compte
-                false
+                game.connect(args.username, args.password, "new_account")
             } else if _a == "signin" {
-                game.connect(args.username, args.password)
+                game.connect(args.username, args.password, "connect")
             } else {
                 println!("Cette option n'est pas disponnible... Essayez 'signup' ou 'signin'.");
                 false
             }
         }
-        None => game.connect(args.username, args.password),
+        None => game.connect(args.username, args.password, "connect"),
     };
-
+    println!("tried to connect");
     if connected {
         game.main_loop();
     } else {

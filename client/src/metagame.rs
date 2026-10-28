@@ -53,12 +53,12 @@ impl Metagame {
         }
     }
 
-    pub fn connect(&mut self, username: String, password: String) -> bool {
+    pub fn connect(&mut self, username: String, password: String, header: &str) -> bool {
         self.username = username.clone();
         self.password = password.clone();
         let req = serde_json::json!({
             "type": "username",
-            "header": "give_new_username",
+            "header": header,
             "data": serde_json::json!({
                 "username": username,
                 "password": password,

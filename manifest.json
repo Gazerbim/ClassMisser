@@ -2,15 +2,27 @@
   {
 		"request": {
 			"type": "username",
-			"header": "give_new_username",
-			"data": "{username: String}"
+			"header": "connect",
+			"data": "{username: String, password: String}"
 		},
 		"response": {
 		  "type": "username",
-			"header": "is_username_available",
+			"header": "connection",
 			"data": "{accept: bool}"
 		}
 	},
+	{
+	"request": {
+		"type": "username",
+		"header": "new_account",
+		"data": "{username: String, password: String}"
+	},
+	"response": {
+	  "type": "username",
+		"header": "connection",
+		"data": "{accept: bool}"
+	}
+},
 	{
 		"request": {
 			"type": "lobbies",
