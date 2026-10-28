@@ -530,6 +530,7 @@ impl Game {
             for m in moves {
                 if m.x == nx && m.y == ny {
                     // Le déplacement est légal.
+                    let eaten_piece = self.board.get(nx as usize, ny as usize);
                     self.board.move_piece(
                         ox as usize,
                         oy as usize,
@@ -538,13 +539,13 @@ impl Game {
                     );
 
                     //si on mange une piece, on ajoute les points du joueur
-                    let eaten_piece = self.board.get(nx as usize, ny as usize);
+                   
+                    
                     if eaten_piece > 0 {
-                        let eaten_piece_cost = self.pieces.get_piece_cost(eaten_piece).unwrap_or(0);
-                        self.players_points[player as usize] += eaten_piece_cost as usize;
+                        self.players_points[player as usize] += 1;
                     }
 
-                    // Chaque déplacement légal rapporte un point.
+                    // chaque déplacement rapporte un point
                     self.players_points[player as usize] += 1;
 
                     return (
@@ -592,7 +593,7 @@ impl Game {
         let dx = (x as isize - kx as isize).abs();
         let dy = (y as isize - ky as isize).abs();
 
-        // Les 8 cases voisines, diagonales comprises.
+        // Les 8 cases voisines, diagonales comprises
         dx <= 1 && dy <= 1 && (dx != 0 || dy != 0)
     }
 }

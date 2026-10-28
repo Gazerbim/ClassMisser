@@ -449,13 +449,14 @@ impl Game {
                 self.team_colors,
             );
         }
-
+        let offset_x = self.board.board_size() as i32 * 5 + 2;
+        let offset_y = 1;
         // indication des commandes
         if self.choosing_spawn {
-            e.fill_rect(0, 0, 59, 4, pixel::pxl(' '));
-            e.print(2, 1, "Choisissez une case de spawn");
-            e.print(2, 2, "Gauche/Droite : changer de case");
-            e.print(2, 3, "Espace : confirmer | Retour arriere : annuler");
+            e.fill_rect(offset_x, offset_y, 59, 4, pixel::pxl(' '));
+            e.print(offset_x + 2, offset_y + 1, "Choisissez une case de spawn");
+            e.print(offset_x + 2, offset_y + 2, "Gauche/Droite : changer de case");
+            e.print(offset_x + 2, offset_y + 3, "Espace : confirmer | Retour arriere : annuler");
         }
 
         // informations des joueurs sous le plateau.
@@ -470,33 +471,36 @@ impl Game {
         team: i8,
         team_colors: [Color; 4],
     ) {
+
+        let offset_x = self.board.board_size() as i32 * 5 + 2;
+        let offset_y = 1;
         let count = self.pieces.get_number_of_different_pieces() as usize;
         let points = self.players_points.get(team as usize).copied().unwrap_or(0);
         let affordable = self.affordable_pieces();
 
         // fond du menu
-        e.fill_rect(0, 0, 59, 10, pixel::pxl(' '));
+        e.fill_rect(offset_x, offset_y, 59, 10, pixel::pxl(' '));
 
         e.print(
-            2,
-            1,
+            offset_x + 2,
+            offset_y + 1,
             &format!("CHOIX DE LA PIECE A SPAWNER  (vos points : {})", points),
         );
         e.print(
-            2,
-            2,
+            offset_x + 2,
+            offset_y + 2,
             "Gauche/Droite : choisir | Espace : valider | P : passer",
         );
 
         if count == 0 {
-            e.print(2, 4, "Aucune piece disponible.");
+            e.print(offset_x + 2, offset_y + 4, "Aucune piece disponible.");
             return;
         }
 
         if affordable.is_empty() {
             e.print(
-                2,
-                9,
+                offset_x + 2,
+                offset_y + 9,
                 "Pas assez de points pour une piece : appuyez sur P pour passer.",
             );
         }
@@ -510,8 +514,8 @@ impl Game {
             let piece = self.pieces.get_piece_from_id(piece_id);
             let cost = self.pieces.get_piece_cost(i as i8, team).unwrap_or(0);
 
-            let x = 2 + ((i - 1) % columns) as i32 * spacing_x;
-            let y = 5 + ((i - 1) / columns) as i32 * spacing_y;
+            let x = offset_x + 2 + ((i - 1) % columns) as i32 * spacing_x;
+            let y = offset_y + 5 + ((i - 1) / columns) as i32 * spacing_y;
 
             let can_buy = affordable.contains(&i);
             let selected = can_buy && i == self.selected_piece;
