@@ -398,7 +398,26 @@ impl Server {
                         }
                     }
                 }
-
+                ("chat", _) => {
+                    let lobby_name = request.data["lobby_name"].as_str().unwrap().to_string();
+                    match self.lobbies.get_lobby_id_by_name(&lobby_name) {
+                        Some(id) => {
+                            let l = self.lobbies.list.get_mut(&id).unwrap();
+                            let (r, response) = l.handle_request(
+                                sender,
+                                "chat",
+                                request.header.as_str(),
+                                &request.data,
+                            );
+                            if response != "".to_string() {
+                                self.broadcast_to_lobby(id, response.as_str()).unwrap();
+                            }
+                        }
+                        None => {
+                            println!("Lobby {} not found", lobby_name)
+                        }
+                    }
+                }
                 _ => {
                     eprintln!(
                         "Requête inconnue : {} / {}",

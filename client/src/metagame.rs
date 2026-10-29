@@ -236,7 +236,8 @@ impl Metagame {
                 }
                 None => {}
             }
-            self.chat.update(&mut self.client);
+            self.chat
+                .update(&mut self.client, &self.in_lobby.get_name());
         }
     }
 

@@ -1,4 +1,5 @@
 pub mod account_manager;
+pub mod chat;
 pub mod clients;
 pub mod game;
 pub mod game_services;

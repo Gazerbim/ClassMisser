@@ -1,7 +1,7 @@
 use mio::Token;
 use serde_json::Value;
 
-use crate::services::game::{self, Game};
+use crate::services::{chat::Chat, game::Game};
 
 pub struct Lobby {
     pub name: String,
@@ -10,6 +10,7 @@ pub struct Lobby {
     pub owner: Token,
     pub game: Game,
     pub number_of_players: i8,
+    pub chat: Chat,
 }
 
 impl Lobby {
@@ -91,6 +92,13 @@ impl Lobby {
                     } else {
                         (Token(0), String::from(""))
                     }
+                }
+                "chat" => {
+                    let mut n_sender = self.list_players.iter().position(|&t| t == sender).unwrap();
+                    if n_sender >= self.number_of_players as usize {
+                        n_sender = 5;
+                    }
+                    (Token(0), self.chat.handle_request(n_sender, header, data))
                 }
                 _ => (Token(0), String::from("")),
             },

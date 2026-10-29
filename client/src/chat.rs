@@ -59,13 +59,14 @@ impl Chat {
         }
     }
 
-    pub fn update(&mut self, client: &mut Client) {
+    pub fn update(&mut self, client: &mut Client, lobby_name: &String) {
         if self.send {
             self.send = false;
             let message = serde_json::json!({
                 "type": "chat",
                 "header": "new_message",
                 "data": {
+                    "lobby_name": lobby_name,
                     "message": &self.buffer,
                 }
             })
