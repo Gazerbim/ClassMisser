@@ -145,8 +145,8 @@ impl Chat {
                 Color::Reset
             };
             e.print_fbg(
-                111,
-                (i + 1) as i32,
+                self.x + 1,
+                (i + 1) as i32 + self.y,
                 &self.received[i].1,
                 color,
                 Color::Reset,
