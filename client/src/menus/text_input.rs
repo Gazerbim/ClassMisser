@@ -1,7 +1,4 @@
-use console_engine::{
-    Color::{self, DarkRed},
-    KeyCode, pixel,
-};
+use console_engine::{Color, KeyCode, pixel};
 
 pub struct TextInput {
     title: String,

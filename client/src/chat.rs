@@ -27,9 +27,19 @@ impl Chat {
                 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p',
                 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z',
             ];
+            let specials = [
+                ' ', '.', ',', '?', '!', ')', '(', '-', '_', '+', '{', '}', '~', '#', '"', '|',
+                '&', '%', '/', ':', '!', '*', '=', ']', '[', 'ç', '@', '1', '2', '3', '4', '5',
+                '6', '7', '8', '9', '0', ';', '°', 'é',
+            ];
             for c in chars {
                 if e.is_key_pressed(KeyCode::Char(c)) || e.is_key_held(KeyCode::Char(c)) {
                     self.buffer.push(c);
+                }
+            }
+            for s in specials {
+                if e.is_key_pressed(KeyCode::Char(s)) || e.is_key_held(KeyCode::Char(s)) {
+                    self.buffer.push(s);
                 }
             }
         }
@@ -118,8 +128,8 @@ impl Chat {
                 111,
                 (i + 1) as i32,
                 &self.received[i].1,
-                Color::Reset,
                 color,
+                Color::Reset,
             );
         }
     }
