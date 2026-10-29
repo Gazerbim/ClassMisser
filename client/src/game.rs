@@ -428,7 +428,7 @@ impl Game {
         let offset_y = self.board.board_size() as i32 * 3;
         // indication des commandes
         if self.choosing_spawn {
-            e.fill_rect(offset_x, offset_y, 59, 4, pixel::pxl(' '));
+            //e.fill_rect(offset_x, offset_y, 59, 4, pixel::pxl(' '));
             e.print(offset_x + 2, offset_y + 1, "Choisissez une case de spawn");
             e.print(
                 offset_x + 2,
