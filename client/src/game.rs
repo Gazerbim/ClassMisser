@@ -107,17 +107,17 @@ impl Game {
     pub fn handle_server(&mut self, response: Response) {
         match response.header.as_str() {
             "piece_moves" => {
-                let x: Option<Vec<usize>> = response.data["x"]
-                    .as_array()
-                    .map(|arr| arr.iter()
+                let x: Option<Vec<usize>> = response.data["x"].as_array().map(|arr| {
+                    arr.iter()
                         .filter_map(|v| v.as_u64().map(|n| n as usize))
-                        .collect());
+                        .collect()
+                });
 
-                let y: Option<Vec<usize>> = response.data["y"]
-                    .as_array()
-                    .map(|arr| arr.iter()
+                let y: Option<Vec<usize>> = response.data["y"].as_array().map(|arr| {
+                    arr.iter()
                         .filter_map(|v| v.as_u64().map(|n| n as usize))
-                        .collect());
+                        .collect()
+                });
 
                 if let (Some(x), Some(y)) = (x, y) {
                     if !x.is_empty() && x.len() == y.len() {
@@ -175,10 +175,18 @@ impl Game {
                             self.awaiting_move = false;
                             self.selected_piece = 0;
                             self.state = GameState::WaitChoosePiece;
-                        } else if self.state != GameState::WaitChoosePiece
-                            && !self.choosing_spawn
-                        {
+                        } else if self.state != GameState::WaitChoosePiece && !self.choosing_spawn {
                             self.state = GameState::WaitPlay;
+                            match response.data["special_action"].as_str() {
+                                Some("buy_piece") => {
+                                    // force à choisir la piece a faire spawner
+                                    self.awaiting_move = false;
+                                    self.selected_piece = 0;
+                                    self.state = GameState::WaitChoosePiece;
+                                }
+                                Some(_) => {}
+                                None => {}
+                            }
                         }
                     }
                 }
@@ -212,13 +220,7 @@ impl Game {
         }
     }
 
-    
-    
-    pub fn handling_hevents(
-        &mut self,
-        e: &mut ConsoleEngine,
-        lobby_name: String,
-    ) {
+    pub fn handling_hevents(&mut self, e: &mut ConsoleEngine, lobby_name: String) {
         // choisir une case de spawn pour la pièce sélectionnée
         if self.choosing_spawn {
             if self.spawn_positions.is_empty() {
@@ -229,17 +231,11 @@ impl Game {
 
             let previous = self.selected_spawn;
 
-            if e.is_key_pressed(KeyCode::Right)
-                || e.is_key_pressed(KeyCode::Down)
-            {
-                self.selected_spawn =
-                    (self.selected_spawn + 1) % self.spawn_positions.len();
-            } else if e.is_key_pressed(KeyCode::Left)
-                || e.is_key_pressed(KeyCode::Up)
-            {
-                self.selected_spawn =
-                    (self.selected_spawn + self.spawn_positions.len() - 1)
-                        % self.spawn_positions.len();
+            if e.is_key_pressed(KeyCode::Right) || e.is_key_pressed(KeyCode::Down) {
+                self.selected_spawn = (self.selected_spawn + 1) % self.spawn_positions.len();
+            } else if e.is_key_pressed(KeyCode::Left) || e.is_key_pressed(KeyCode::Up) {
+                self.selected_spawn = (self.selected_spawn + self.spawn_positions.len() - 1)
+                    % self.spawn_positions.len();
             }
 
             if previous != self.selected_spawn {
@@ -258,9 +254,7 @@ impl Game {
             }
 
             if e.is_key_pressed(KeyCode::Char(' ')) {
-                if let Some(&(x, y)) =
-                    self.spawn_positions.get(self.selected_spawn)
-                {
+                if let Some(&(x, y)) = self.spawn_positions.get(self.selected_spawn) {
                     self.pending_request = serde_json::json!({
                         "type": "game",
                         "header": "spawn_piece",
@@ -271,7 +265,8 @@ impl Game {
                             "lobby_name": lobby_name
                         }
                     })
-                    .to_string() + "$";
+                    .to_string()
+                        + "$";
 
                     // le serveur dit si c'est good ou pas donc on attend sa réponse avant de quitter le menu
                     self.choosing_spawn = false;
@@ -317,37 +312,28 @@ impl Game {
                 .position(|&id| id == self.selected_piece)
                 .unwrap_or(0);
 
-            if e.is_key_pressed(KeyCode::Right)
-                || e.is_key_pressed(KeyCode::Down)
-            {
+            if e.is_key_pressed(KeyCode::Right) || e.is_key_pressed(KeyCode::Down) {
+                self.selected_piece = affordable[(current + 1) % affordable.len()];
+            } else if e.is_key_pressed(KeyCode::Left) || e.is_key_pressed(KeyCode::Up) {
                 self.selected_piece =
-                    affordable[(current + 1) % affordable.len()];
-            } else if e.is_key_pressed(KeyCode::Left)
-                || e.is_key_pressed(KeyCode::Up)
-            {
-                self.selected_piece = affordable[
-                    (current + affordable.len() - 1) % affordable.len()
-                ];
+                    affordable[(current + affordable.len() - 1) % affordable.len()];
             }
 
             if e.is_key_pressed(KeyCode::Char(' ')) {
-                let Some(cost) = self.pieces.get_piece_cost(
-                    self.selected_piece as i8,
-                    self.color as i8,
-                ) else {
+                let Some(cost) = self
+                    .pieces
+                    .get_piece_cost(self.selected_piece as i8, self.color as i8)
+                else {
                     return;
                 };
 
-                if cost < 0
-                    || self.players_points[self.color as usize] < cost as usize
-                {
+                if cost < 0 || self.players_points[self.color as usize] < cost as usize {
                     return;
                 }
 
                 self.previous_cursor = self.board.get_selected();
 
-                self.spawn_positions =
-                    self.board.get_spawn_positions(self.color as i8);
+                self.spawn_positions = self.board.get_spawn_positions(self.color as i8);
 
                 if self.spawn_positions.is_empty() {
                     return;
@@ -364,29 +350,20 @@ impl Game {
         }
 
         // deplacement normal
-        if e.is_key_pressed(KeyCode::Right)
-            || e.is_key_pressed(KeyCode::Char('l'))
-        {
+        if e.is_key_pressed(KeyCode::Right) || e.is_key_pressed(KeyCode::Char('l')) {
             self.board.move_selected_area(1, 0);
-        } else if e.is_key_pressed(KeyCode::Left)
-            || e.is_key_pressed(KeyCode::Char('h'))
-        {
+        } else if e.is_key_pressed(KeyCode::Left) || e.is_key_pressed(KeyCode::Char('h')) {
             self.board.move_selected_area(-1, 0);
-        } else if e.is_key_pressed(KeyCode::Down)
-            || e.is_key_pressed(KeyCode::Char('j'))
-        {
+        } else if e.is_key_pressed(KeyCode::Down) || e.is_key_pressed(KeyCode::Char('j')) {
             self.board.move_selected_area(0, 1);
-        } else if e.is_key_pressed(KeyCode::Up)
-            || e.is_key_pressed(KeyCode::Char('k'))
-        {
+        } else if e.is_key_pressed(KeyCode::Up) || e.is_key_pressed(KeyCode::Char('k')) {
             self.board.move_selected_area(0, -1);
         } else if e.is_key_pressed(KeyCode::Char(' '))
             && self.state == GameState::WaitPlay
             && self.is_playing == self.color
         {
             if !self.board.is_selected_highlighted() {
-                let (x, y) =
-                    self.board.select(&self.pieces, self.color as i8);
+                let (x, y) = self.board.select(&self.pieces, self.color as i8);
 
                 if x != usize::MAX {
                     self.pending_request = serde_json::json!({
@@ -398,7 +375,8 @@ impl Game {
                             "lobby_name": lobby_name
                         }
                     })
-                    .to_string() + "$";
+                    .to_string()
+                        + "$";
                 } else {
                     self.board.clear_highlights();
                 }
@@ -417,7 +395,8 @@ impl Game {
                         "lobby_name": lobby_name
                     }
                 })
-                .to_string() + "$";
+                .to_string()
+                    + "$";
 
                 self.awaiting_move = true;
                 self.state = GameState::WaitEnd;
@@ -425,12 +404,8 @@ impl Game {
         }
     }
 
-
-
-
     pub fn update(&self) {}
 
-    
     pub fn display(&mut self, e: &mut ConsoleEngine) {
         // Afficher le plateau
         self.board.display(e, &self.pieces, &self.team_colors);
@@ -443,11 +418,7 @@ impl Game {
 
         // afficher le menu de sélection par-dessus le plateau
         if self.state == GameState::WaitChoosePiece && !self.choosing_spawn {
-            self.display_all_pieces(
-                e,
-                self.color as i8,
-                self.team_colors,
-            );
+            self.display_all_pieces(e, self.color as i8, self.team_colors);
         }
         let offset_x = self.board.board_size() as i32 * 5 + 2;
         let offset_y = 1;
@@ -455,23 +426,23 @@ impl Game {
         if self.choosing_spawn {
             e.fill_rect(offset_x, offset_y, 59, 4, pixel::pxl(' '));
             e.print(offset_x + 2, offset_y + 1, "Choisissez une case de spawn");
-            e.print(offset_x + 2, offset_y + 2, "Gauche/Droite : changer de case");
-            e.print(offset_x + 2, offset_y + 3, "Espace : confirmer | Retour arriere : annuler");
+            e.print(
+                offset_x + 2,
+                offset_y + 2,
+                "Gauche/Droite : changer de case",
+            );
+            e.print(
+                offset_x + 2,
+                offset_y + 3,
+                "Espace : confirmer | Retour arriere : annuler",
+            );
         }
 
         // informations des joueurs sous le plateau.
         self.display_players_info(e);
     }
 
-
-    
-    pub fn display_all_pieces(
-        &mut self,
-        e: &mut ConsoleEngine,
-        team: i8,
-        team_colors: [Color; 4],
-    ) {
-
+    pub fn display_all_pieces(&mut self, e: &mut ConsoleEngine, team: i8, team_colors: [Color; 4]) {
         let offset_x = self.board.board_size() as i32 * 5 + 2;
         let offset_y = 1;
         let count = self.pieces.get_number_of_different_pieces() as usize;
@@ -548,7 +519,6 @@ impl Game {
         }
     }
 
-
     fn display_players_info(&self, e: &mut ConsoleEngine) {
         let y = (self.board.board_size() * 3 + 1) as i32;
 
@@ -565,9 +535,7 @@ impl Game {
 
             let line = format!(
                 "Joueur {} : {} point(s){}",
-                player,
-                self.players_points[player],
-                status
+                player, self.players_points[player], status
             );
 
             e.print(0, y + 1 + player as i32, &line);
@@ -587,9 +555,7 @@ impl Game {
                 self.pieces
                     .get_piece_cost(id as i8, self.color as i8)
                     .map(|cost| {
-                        cost >= 0
-                            && self.players_points[self.color as usize]
-                                >= cost as usize
+                        cost >= 0 && self.players_points[self.color as usize] >= cost as usize
                     })
                     .unwrap_or(false)
             })

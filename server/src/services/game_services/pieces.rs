@@ -53,7 +53,7 @@ impl Pieces {
             .expect("the id isnt in pieces")
     }
 
-    fn get_team(&self, id: i8) -> i8 {
+    pub fn get_team(&self, id: i8) -> i8 {
         return self.get_piece_from_id(id).team;
     }
 
@@ -116,9 +116,11 @@ impl Pieces {
 
         self.pieces
             .iter()
-            .find(|piece| piece.index % self.number_of_different_pieces == local_id
-                || piece.index % self.number_of_different_pieces == 0
-                    && local_id == self.number_of_different_pieces)
+            .find(|piece| {
+                piece.index % self.number_of_different_pieces == local_id
+                    || piece.index % self.number_of_different_pieces == 0
+                        && local_id == self.number_of_different_pieces
+            })
             .map(|piece| piece.get_cost())
     }
 

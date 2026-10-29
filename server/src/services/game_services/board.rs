@@ -111,6 +111,20 @@ impl Board {
         return what_is_to;
     }
 
+    pub fn get_number_alive_pieces_of_player(&self, pieces: &Pieces, player: i8) -> usize {
+        let mut tot: usize = 0;
+        for i in 0..self.board_size {
+            for j in 0..self.board_size {
+                if self.data[(i, j)] > 0 {
+                    if pieces.get_team(self.data[(i, j)]) == player {
+                        tot += 1;
+                    }
+                }
+            }
+        }
+        tot
+    }
+
     fn move_selected_area(&mut self, dx: i8, dy: i8) {
         let tx = self.selected.0 as i16 + dx as i16;
         let ty = self.selected.1 as i16 + dy as i16;
