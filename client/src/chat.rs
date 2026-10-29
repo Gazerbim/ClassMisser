@@ -8,6 +8,8 @@ pub struct Chat {
     received: Vec<(usize, String)>,
     height: i32,
     length: i32,
+    x: i32,
+    y: i32,
 }
 
 impl Chat {
@@ -18,6 +20,8 @@ impl Chat {
             received: Vec::new(),
             height: 30,
             length: 50,
+            x: 80,
+            y: 0,
         }
     }
 
@@ -88,36 +92,52 @@ impl Chat {
     }
 
     pub fn display(&self, e: &mut ConsoleEngine, colors: &[Color; 4]) {
-        e.line(110, 0, 110, self.height, pixel::pxl('|'));
         e.line(
-            110 + self.length,
-            0,
-            110 + self.length,
-            self.height,
+            self.x,
+            self.y,
+            self.x,
+            self.y + self.height,
             pixel::pxl('|'),
         );
-        e.line(110, 0, 110 + self.length, 0, pixel::pxl('-'));
         e.line(
-            110,
-            self.height,
-            110 + self.length,
-            self.height,
+            self.x + self.length,
+            self.y,
+            self.x + self.length,
+            self.y + self.height,
+            pixel::pxl('|'),
+        );
+        e.line(
+            self.x,
+            self.y,
+            self.x + self.length,
+            self.y,
             pixel::pxl('-'),
         );
         e.line(
-            110,
-            self.height - 4,
-            110 + self.length,
-            self.height - 4,
+            self.x,
+            self.y + self.height,
+            self.x + self.length,
+            self.y + self.height,
             pixel::pxl('-'),
         );
-        e.set_pxl(110, self.height, pixel::pxl('+'));
-        e.set_pxl(110 + self.length, self.height, pixel::pxl('+'));
-        e.set_pxl(110, 0, pixel::pxl('+'));
-        e.set_pxl(110 + self.length, 0, pixel::pxl('+'));
-        e.set_pxl(110, self.height - 4, pixel::pxl('+'));
-        e.set_pxl(160, self.height - 4, pixel::pxl('+'));
-        e.print(111, self.height - 2, &self.buffer);
+        e.line(
+            self.x,
+            self.y + self.height - 4,
+            self.x + self.length,
+            self.y + self.height - 4,
+            pixel::pxl('-'),
+        );
+        e.set_pxl(self.x, self.y + self.height, pixel::pxl('+'));
+        e.set_pxl(self.x + self.length, self.y + self.height, pixel::pxl('+'));
+        e.set_pxl(self.x, self.y, pixel::pxl('+'));
+        e.set_pxl(self.x + self.length, self.y, pixel::pxl('+'));
+        e.set_pxl(self.x, self.y + self.height - 4, pixel::pxl('+'));
+        e.set_pxl(
+            self.x + self.length,
+            self.y + self.height - 4,
+            pixel::pxl('+'),
+        );
+        e.print(self.x + 1, self.y + self.height - 2, &self.buffer);
         for i in 0..self.received.len() {
             let color = if self.received[i].0 < 4 {
                 colors[self.received[i].0]

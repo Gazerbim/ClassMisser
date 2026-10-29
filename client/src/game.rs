@@ -424,8 +424,8 @@ impl Game {
         if self.state == GameState::WaitChoosePiece && !self.choosing_spawn {
             self.display_all_pieces(e, self.color as i8, self.team_colors);
         }
-        let offset_x = self.board.board_size() as i32 * 5 + 2;
-        let offset_y = 1;
+        let offset_x = 0;
+        let offset_y = self.board.board_size() as i32 * 3;
         // indication des commandes
         if self.choosing_spawn {
             e.fill_rect(offset_x, offset_y, 59, 4, pixel::pxl(' '));
@@ -447,14 +447,14 @@ impl Game {
     }
 
     pub fn display_all_pieces(&mut self, e: &mut ConsoleEngine, team: i8, team_colors: [Color; 4]) {
-        let offset_x = self.board.board_size() as i32 * 5 + 2;
-        let offset_y = 1;
+        let offset_x = 0;
+        let offset_y = self.board.board_size() as i32 * 3;
         let count = self.pieces.get_number_of_different_pieces() as usize;
         let points = self.players_points.get(team as usize).copied().unwrap_or(0);
         let affordable = self.affordable_pieces();
 
         // fond du menu
-        e.fill_rect(offset_x, offset_y, 59, 10, pixel::pxl(' '));
+        //e.fill_rect(offset_x, offset_y, 59, 10, pixel::pxl(' '));
 
         e.print(
             offset_x + 2,
@@ -524,9 +524,10 @@ impl Game {
     }
 
     fn display_players_info(&self, e: &mut ConsoleEngine) {
-        let y = (self.board.board_size() * 3 + 1) as i32;
+        let y = 1;
+        let x = self.board.board_size() as i32 * 5 + 2;
 
-        e.print(0, y, "Joueurs :");
+        e.print(x, y, "Joueurs :");
 
         let teams = (self.team_number.max(0) as usize).min(4);
 
@@ -542,7 +543,7 @@ impl Game {
                 player, self.players_points[player], status
             );
 
-            e.print(0, y + 1 + player as i32, &line);
+            e.print(x, y + 1 + player as i32, &line);
         }
     }
 
