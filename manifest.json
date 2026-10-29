@@ -178,5 +178,17 @@
 			"header": "game_quitted",
 			"data": "{}"
 		}
+	},
+  {
+		"request": {
+			"type": "chat",
+			"header": "new_message",
+			"data": "{ message: String }"
+		},
+		"response": {
+		  "type": "chat",
+			"header": "new_message",
+			"data": "{ message: String, sender, i8 }"
+		}
 	}
 ]

@@ -13,7 +13,6 @@ pub struct Board {
 }
 
 impl Board {
-
     pub fn board_size(&self) -> usize {
         self.board_size
     }
@@ -28,11 +27,7 @@ impl Board {
         self.get(x, y) == 0
     }
 
-        
-    pub fn get_spawn_positions(
-        &self,
-        player: i8,
-    ) -> Vec<(usize, usize)> {
+    pub fn get_spawn_positions(&self, player: i8) -> Vec<(usize, usize)> {
         let n = self.board_size;
 
         if n == 0 || player < 0 || player >= self.team_number {
@@ -94,13 +89,12 @@ impl Board {
         positions
     }
 
-
     pub fn new() -> Board {
         //let grid: Array2D<i8> = Array2D::filled_with(0, board_size, board_size);
         let grid: Array2D<i8> = Array2D::filled_with(0, 1, 1);
         Board {
             data: grid,
-            selected: (0, 0),
+            selected: (4, 4),
             selected_piece: (usize::MAX, usize::MAX),
             to_highlight: Vec::new(),
             board_size: 1,

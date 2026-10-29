@@ -6,7 +6,7 @@ use crate::client::Client;
 use crate::game::Game;
 use crate::menus::home::Home;
 use crate::types::protocol::Response;
-use crate::types::states::State;
+use crate::types::states::{Focus, State};
 
 use crate::menus::in_lobby::InLobby;
 use crate::menus::select_lobby::SelectLobby;
@@ -16,6 +16,7 @@ pub struct Metagame {
     client: Client,
     engine: ConsoleEngine,
     state: State,
+    focus: Focus,
     game: Game,
     chat: Chat,
 
@@ -36,6 +37,7 @@ impl Metagame {
             client: Client::new(host),
             engine: console_engine::ConsoleEngine::init_fill(20).unwrap(),
             state: State::Home,
+            focus: Focus::Game,
             game: Game::new(),
             chat: Chat::new(),
             home: SelectLobby::new(vec![
@@ -168,10 +170,19 @@ impl Metagame {
             if self.engine.is_key_pressed(console_engine::KeyCode::Esc) {
                 //envoyer une requête pour prévenir qu'on a quitté la partie (voir ce qu'on fait dans ce cas)
                 self.state = State::Home;
+            } else if self.engine.is_key_pressed(console_engine::KeyCode::Tab) {
+                if self.focus == Focus::Game {
+                    self.focus = Focus::Chat;
+                } else {
+                    self.focus = Focus::Game;
+                }
             }
-            self.game
-                .handling_hevents(&mut self.engine, self.in_lobby.get_name());
-            self.chat.handling_events();
+            if self.focus == Focus::Game {
+                self.game
+                    .handling_hevents(&mut self.engine, self.in_lobby.get_name());
+            } else {
+                self.chat.handling_events(&self.engine, self.username.len());
+            }
         }
         false
     }
@@ -225,7 +236,7 @@ impl Metagame {
                 }
                 None => {}
             }
-            self.chat.update();
+            self.chat.update(&mut self.client);
         }
     }
 
@@ -252,7 +263,8 @@ impl Metagame {
                 .display(&mut self.engine, (left_third, top_left));
         } else if self.state == State::InGame {
             self.game.display(&mut self.engine);
-            self.chat.display();
+            self.chat
+                .display(&mut self.engine, self.game.get_team_colors());
         }
         self.engine.draw(); // draw the screen
     }
@@ -266,6 +278,7 @@ impl Metagame {
                         "username" => self.read_username_server_response(response),
                         "lobbies" => self.read_lobby_server_response(response),
                         "game" => self.read_game_server_response(response),
+                        "chat" => self.chat.handle_server(response),
                         _ => {}
                     }
                 }

@@ -10,6 +10,12 @@ pub enum State {
 }
 
 #[derive(PartialEq)]
+pub enum Focus {
+    Game,
+    Chat,
+}
+
+#[derive(PartialEq)]
 pub enum GameState {
     WaitInit,
     WaitPlay,

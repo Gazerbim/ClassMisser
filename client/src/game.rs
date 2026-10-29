@@ -49,6 +49,10 @@ impl Game {
         self.color = new_color;
     }
 
+    pub fn get_team_colors(&self) -> &[Color; 4] {
+        &self.team_colors
+    }
+
     pub fn clear_pending_request(&mut self) {
         self.pending_request = "".to_string();
     }
