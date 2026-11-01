@@ -179,6 +179,13 @@
 			"data": "{}"
 		}
 	},
+	{
+		"response": {
+		  "type": "game",
+			"header": "update_players",
+			"data": "{ new_players: [String], new_spectators: [String]}"
+		}
+	},
   {
 		"request": {
 			"type": "chat",

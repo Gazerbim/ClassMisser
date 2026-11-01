@@ -9,6 +9,7 @@ pub struct Client {
     pub sent: usize,
     pub token: Token,
     pub connection_state: bool,
+    pub username: String,
 }
 
 impl Client {
@@ -20,6 +21,7 @@ impl Client {
             sent: 0,
             token: token,
             connection_state: false,
+            username: "".to_string(),
         }
     }
 }
@@ -44,8 +46,14 @@ impl Clients {
         c.connection_state
     }
 
-    pub fn set_client_connection_state(&mut self, token: &Token, state: bool) {
+    pub fn get_username(&self, token: &Token) -> String {
+        let c = self.list.get(token).unwrap();
+        c.username.clone()
+    }
+
+    pub fn set_client_connection_state(&mut self, token: &Token, state: bool, username: String) {
         let c = self.list.get_mut(token).unwrap();
         c.connection_state = state;
+        c.username = username;
     }
 }

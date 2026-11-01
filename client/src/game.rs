@@ -1,3 +1,5 @@
+use std::os::linux::raw::stat;
+
 use console_engine::{Color, ConsoleEngine, KeyCode, pixel};
 use serde_json::Value;
 
@@ -22,6 +24,8 @@ pub struct Game {
     previous_cursor: (usize, usize),
     awaiting_move: bool,
     team_number: i8,
+    players_names: Vec<String>,
+    spectators_names: Vec<String>,
 }
 
 impl Game {
@@ -42,6 +46,13 @@ impl Game {
             previous_cursor: (0, 0),
             awaiting_move: false,
             team_number: 4,
+            players_names: vec![
+                "Elie".to_string(),
+                "Serguei".to_string(),
+                "Paul".to_string(),
+                "Axel".to_string(),
+            ],
+            spectators_names: vec!["Jules".to_string(), "Louan".to_string()],
         }
     }
 
@@ -65,6 +76,8 @@ impl Game {
         x: &Vec<Value>,
         y: &Vec<Value>,
         pieces: &Vec<Value>,
+        new_players: Vec<String>,
+        new_spectators: Vec<String>,
     ) {
         let mut xc: Vec<usize> = Vec::new();
         let mut yc: Vec<usize> = Vec::new();
@@ -92,6 +105,8 @@ impl Game {
         self.color = color;
         self.is_playing = 0;
         self.team_number = team_number;
+        self.players_names = new_players;
+        self.spectators_names = new_spectators;
 
         // restore base state.
         self.players_points = [0; 4];
@@ -110,6 +125,43 @@ impl Game {
 
     pub fn handle_server(&mut self, response: Response) {
         match response.header.as_str() {
+            "update_players" => {
+                let mut new_players: Vec<String> = Vec::new();
+                match response.data["new_players"].as_array() {
+                    Some(_pl) => {
+                        for p in _pl {
+                            match p.as_str() {
+                                Some(_s) => {
+                                    new_players.push(_s.to_string());
+                                }
+                                None => {}
+                            }
+                        }
+                    }
+                    None => {}
+                }
+                if new_players.len() as i8 == self.team_number {
+                    self.players_names = new_players;
+                } else {
+                    //erreur ! Je ne sais pas quoi faire
+                }
+
+                let mut new_spectators: Vec<String> = Vec::new();
+                match response.data["new_spectators"].as_array() {
+                    Some(_pl) => {
+                        for p in _pl {
+                            match p.as_str() {
+                                Some(_s) => {
+                                    new_spectators.push(_s.to_string());
+                                }
+                                None => {}
+                            }
+                        }
+                    }
+                    None => {}
+                }
+                self.spectators_names = new_spectators;
+            }
             "piece_moves" => {
                 let x: Option<Vec<usize>> = response.data["x"].as_array().map(|arr| {
                     arr.iter()
@@ -533,17 +585,29 @@ impl Game {
 
         for player in 0..teams {
             let status = if player == self.is_playing as usize {
-                " <-- joue"
+                "<-- joue"
             } else {
                 ""
             };
 
             let line = format!(
-                "Joueur {} : {} point(s){}",
-                player, self.players_points[player], status
+                "{} : {}p",
+                self.players_names[player], self.players_points[player]
             );
 
-            e.print(x, y + 1 + player as i32, &line);
+            e.print_fbg(
+                x,
+                y + 1 + player as i32,
+                &line,
+                self.team_colors[player],
+                Color::Reset,
+            );
+            e.print(1 + x + line.len() as i32, y + 1 + player as i32, status);
+        }
+
+        e.print(x, y + 6, "Spectateurs :");
+        for i in 0..self.spectators_names.len() {
+            e.print(x, y + (7 + i) as i32, self.spectators_names[i].as_str());
         }
     }
 

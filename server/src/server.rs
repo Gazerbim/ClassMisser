@@ -8,7 +8,7 @@ use std::net::SocketAddr;
 use crate::services::account_manager::AccountManager;
 use crate::services::clients::{Client, Clients};
 use crate::services::lobbies::Lobbies;
-use crate::services::players::{self, Player, Players};
+use crate::services::players::{Player, Players};
 use crate::services::protocol::Request;
 
 const SERVER: Token = Token(0);
@@ -113,7 +113,10 @@ impl Server {
     fn disconnect_client(&mut self, token: Token) {
         if let Some(mut client) = self.clients.list.remove(&token) {
             let _ = self.poll.registry().deregister(&mut client.socket);
-            self.lobbies.player_disconnection(&token);
+            let messages = self.lobbies.player_disconnection(&token, &self.clients);
+            for (lobby_id, message) in messages {
+                self.broadcast_to_lobby(lobby_id, &message).unwrap();
+            }
             println!("Client {:?} déconnecté", token);
         }
     }
@@ -483,7 +486,8 @@ impl Server {
                 .players
                 .add_player(sender, Player::new(String::from(username)));
 
-            self.clients.set_client_connection_state(&sender, true);
+            self.clients
+                .set_client_connection_state(&sender, true, username.to_string());
 
             return self.send_to_client(
                 sender,
@@ -525,7 +529,8 @@ impl Server {
                 .players
                 .add_player(sender, Player::new(String::from(username)));
 
-            self.clients.set_client_connection_state(&sender, true);
+            self.clients
+                .set_client_connection_state(&sender, true, username.to_string());
 
             return self.send_to_client(
                 sender,
@@ -576,6 +581,21 @@ impl Server {
 
             let (x, y, p) = self.lobbies.start_game_by_lobby_id(id, n, 9);
             let players = self.lobbies.get_clients_from_lobby(id);
+
+            //récupérer pseudos tous les joueurs et tous les spectateurs
+            let mut players_usernames: Vec<String> = Vec::new();
+            let mut spectators: Vec<String> = Vec::new();
+            for i in 0..players.len() {
+                let username = self.clients.get_username(&players[i]);
+                if username != "".to_string() {
+                    if i < n as usize {
+                        players_usernames.push(username.clone());
+                    } else {
+                        spectators.push(username.clone());
+                    }
+                }
+            }
+
             for i in 0..players.len() {
                 self.send_to_client(
                     players[i as usize],
@@ -590,6 +610,8 @@ impl Server {
                             "x": x,
                             "y": y,
                             "pieces": p,
+                            "players": players_usernames,
+                            "spectators": spectators
                         }),
                     ),
                 )

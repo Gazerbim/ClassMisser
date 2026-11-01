@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use mio::Token;
 use serde_json::Value;
 
-use crate::services::{chat::Chat, game::Game, lobby::Lobby};
+use crate::services::{chat::Chat, clients::Clients, game::Game, lobby::Lobby};
 
 pub struct Lobbies {
     pub list: HashMap<usize, Lobby>,
@@ -41,9 +41,9 @@ impl Lobbies {
         self.list.get(&id).unwrap().get_all_players()
     }
 
-    pub fn get_players_from_lobby(&self, id: usize) -> Vec<Token> {
-        self.list.get(&id).unwrap().get_players()
-    }
+    // pub fn get_players_from_lobby(&self, id: usize) -> Vec<Token> {
+    //     self.list.get(&id).unwrap().get_players()
+    // }
 
     pub fn get_spectators_from_lobby(&self, id: usize) -> Vec<Token> {
         self.list.get(&id).unwrap().get_spectators()
@@ -58,7 +58,17 @@ impl Lobbies {
         None
     }
 
-    pub fn player_disconnection(&mut self, player_token: &Token) {
+    pub fn player_disconnection(
+        &mut self,
+        player_token: &Token,
+        clients: &Clients,
+    ) -> Vec<(usize, String)> {
+        //on déconnecte les joueur de tous les lobbies dans lesquel il pourrait être
+        // à priori, un joueur n'est que dans un lobby
+        // mais
+        // 1) les erreurs arrivent
+        // 2) Le profs aimerais qu'on puisse jouer plusieurs partie à la fois. Je ne sais pas si on le fera, mais c'est déjà ca de fait
+        // (c'est pas du tout psk j'ai oublié pourquoi j'ai fait ça il y a deux semaines)
         let affected_lobbies: Vec<usize> = self
             .list
             .keys()
@@ -66,18 +76,48 @@ impl Lobbies {
             .cloned()
             .collect();
         let mut empty_lobbies: Vec<String> = Vec::new();
+        let mut return_messages: Vec<(usize, String)> = Vec::new();
         for k in affected_lobbies {
             let lobby = self.list.get_mut(&k).unwrap();
             lobby.remove_player(player_token);
             if lobby.get_number_players_in_lobby() == 0 {
                 empty_lobbies.push(lobby.name.clone());
-            } else if lobby.owner == *player_token {
-                lobby.owner = lobby.list_players[0];
+            } else {
+                let mut new_players: Vec<String> = Vec::new();
+                let mut spectators: Vec<String> = Vec::new();
+                for t in lobby.get_players() {
+                    let username = clients.get_username(&t);
+                    if username != "".to_string() {
+                        new_players.push(username.clone());
+                    }
+                }
+                for t in lobby.get_spectators() {
+                    let username = clients.get_username(&t);
+                    if username != "".to_string() {
+                        spectators.push(username.clone());
+                    }
+                }
+                let message = serde_json::json!({
+                    "type": "game",
+                    "header": "update_players",
+                    "data": {
+                        "new_players": new_players,
+                        "new_spectators": spectators
+                    }
+                })
+                .to_string()
+                    + "$";
+                return_messages.push((k, message));
+                if lobby.owner == *player_token {
+                    lobby.owner = lobby.list_players[0];
+                }
             }
         }
         for n in empty_lobbies {
             self.delete_lobby_by_name(n);
         }
+
+        return return_messages;
     }
 
     pub fn start_game_by_lobby_id(
@@ -184,7 +224,8 @@ impl Lobbies {
                             }
                         }
                         if !already_in {
-                            l.list_players.push(sender);
+                            //l.list_players.push(sender);
+                            l.add_player(sender);
                             let name = data["name"].to_string();
                             added = name.clone()[1..(name.len() - 1)].to_string()
                         }

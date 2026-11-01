@@ -384,7 +384,45 @@ impl Metagame {
                     Some(_a) => _a,
                     None => &Vec::new(),
                 };
-                self.game.init_game(new_color as i32, size, n, x, y, pieces);
+                let mut new_players: Vec<String> = Vec::new();
+                match response.data["players"].as_array() {
+                    Some(_pl) => {
+                        for p in _pl {
+                            match p.as_str() {
+                                Some(_s) => {
+                                    new_players.push(_s.to_string());
+                                }
+                                None => {}
+                            }
+                        }
+                    }
+                    None => {}
+                }
+
+                let mut new_spectators: Vec<String> = Vec::new();
+                match response.data["spectators"].as_array() {
+                    Some(_pl) => {
+                        for p in _pl {
+                            match p.as_str() {
+                                Some(_s) => {
+                                    new_spectators.push(_s.to_string());
+                                }
+                                None => {}
+                            }
+                        }
+                    }
+                    None => {}
+                }
+                self.game.init_game(
+                    new_color as i32,
+                    size,
+                    n,
+                    x,
+                    y,
+                    pieces,
+                    new_players,
+                    new_spectators,
+                );
                 self.state = State::InGame
             }
             _ => {

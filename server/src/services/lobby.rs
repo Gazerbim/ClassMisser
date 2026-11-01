@@ -9,8 +9,8 @@ pub struct Lobby {
     pub in_game: bool,
     pub owner: Token,
     pub game: Game,
-    pub number_of_players: i8,
-    pub chat: Chat,
+    pub number_of_players: i8, //nombre de joueurs, pas nombre de connectés dans le lobby
+    pub chat: Chat,            //miaou
 }
 
 impl Lobby {
@@ -39,6 +39,9 @@ impl Lobby {
 
     pub fn get_players(&self) -> Vec<Token> {
         let mut players: Vec<Token> = Vec::new();
+        // for i in 0..self.list_players.len() {
+        //     println!("{}", self.list_players[i].0);
+        // }
         for i in 0..self.number_of_players {
             players.push(self.list_players[i as usize]);
         }
@@ -60,6 +63,10 @@ impl Lobby {
             }
         }
         false
+    }
+
+    pub fn add_player(&mut self, player_token: Token) {
+        self.list_players.push(player_token);
     }
 
     pub fn remove_player(&mut self, player_token: &Token) {
