@@ -57,6 +57,14 @@ impl Pieces {
         return self.get_piece_from_id(id).team;
     }
 
+    pub fn get_piece_index(&self, id: i8) -> i8 {
+        let mut index = id;
+        while index > self.number_of_different_pieces {
+            index -= self.number_of_different_pieces;
+        }
+        index
+    }
+
     pub fn get_moves_from_position(&self, x: usize, y: usize, id: i8, board: &Board) -> Vec<Move> {
         let piece = self.get_piece_from_id(id);
         let my_team = piece.team;

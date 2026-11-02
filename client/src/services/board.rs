@@ -27,7 +27,7 @@ impl Board {
         self.get(x, y) == 0
     }
 
-    pub fn get_spawn_positions(&self, player: i8) -> Vec<(usize, usize)> {
+    pub fn get_spawn_positions(&self, player: i8, pieces: &Pieces) -> Vec<(usize, usize)> {
         let n = self.board_size;
 
         if n == 0 || player < 0 || player >= self.team_number {
@@ -36,12 +36,13 @@ impl Board {
 
         // identifiants des rois definis par le serveur.
         let king_id = match player {
-            0 => -5,
-            1 => -4,
-            2 => -3,
-            3 => -2,
+            0 => 6,
+            1 => 6 + pieces.get_number_different_pieces(),
+            2 => 6 + 2 * pieces.get_number_different_pieces(),
+            3 => 6 + 3 * pieces.get_number_different_pieces(),
             _ => return Vec::new(),
         };
+        let king_id = king_id as i8;
 
         // recherche de la position actuelle du roi.
         let mut king_position = None;

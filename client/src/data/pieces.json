@@ -86,5 +86,15 @@
         "label":"♕",
         "eating_moves": [],
         "team":0
+    },
+    {
+        "name": "roi",
+        "index": 6,
+        "moves": [],
+        "extendable":false,
+        "cost":100,
+        "label":" ",
+        "eating_moves": [],
+        "team":0
     }
 ]

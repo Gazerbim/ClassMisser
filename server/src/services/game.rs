@@ -199,6 +199,7 @@ pub struct Game {
     // true une fois que le joueur qui joue a move une piece pdt son tour.
     // tour = 1 déplacement, puis (optionnellement) 1 pièce à faire apparaître.
     has_moved: bool,
+    king_eaten: i8, //>=0 si le joueur mange un roi lors de ce tour
 }
 
 impl Game {
@@ -211,6 +212,7 @@ impl Game {
             player_playing: 0,
             players_points: [0, 0, 0, 0],
             has_moved: false,
+            king_eaten: -1,
         }
     }
 
@@ -222,6 +224,7 @@ impl Game {
             player_playing: 0,
             players_points: [0, 0, 0, 0],
             has_moved: false,
+            king_eaten: -1,
         }
     }
 
@@ -320,11 +323,27 @@ impl Game {
                     return (sender, Self::simple_message("move_rejected"));
                 }
 
-                let (x, y, p) = self.try_move_piece(ox as i8, oy as i8, nx as i8, ny as i8, sender);
+                let (mut x, mut y, mut p) =
+                    self.try_move_piece(ox as i8, oy as i8, nx as i8, ny as i8, sender);
 
                 if x.is_empty() || y.is_empty() || p.is_empty() {
                     // coup illégal : on previent le joueur pour qu'il puisse rejouer.
                     return (sender, Self::simple_message("move_rejected"));
+                } else {
+                    if self.king_eaten >= 0 {
+                        println!("le joueur {} a gagné", self.king_eaten);
+                        self.board.a_player_lost(
+                            self.player_playing,
+                            self.king_eaten,
+                            &self.pieces,
+                        );
+                        self.king_eaten = -1;
+                        let (old_x, old_y, old_p) = (x, y, p);
+                        (x, y, p) = self.board.get_simplfied_board();
+                        x.extend(&old_x);
+                        y.extend(&old_y);
+                        p.extend(&old_p);
+                    }
                 }
 
                 self.has_moved = true;
@@ -346,7 +365,7 @@ impl Game {
                         "pieces": p,
                         "player_playing": self.player_playing,
                         "players_points": self.players_points,
-                        "players_special_state": "normal",
+                        "players_special_state": "normal", //pour quand le joueur n'a plus de pièces à bouger
                     }
                 })
                 .to_string()
@@ -402,10 +421,10 @@ impl Game {
                 }
 
                 let king_id = match sender {
-                    0 => -5,
-                    1 => -4,
-                    2 => -3,
-                    3 => -2,
+                    0 => 6,
+                    1 => 6 + count,
+                    2 => 6 + 2 * count,
+                    3 => 6 + 3 * count,
                     _ => return reject(),
                 };
 
@@ -569,6 +588,10 @@ impl Game {
                     //si on mange une piece, on ajoute les points du joueur
                     if eaten_piece > 0 {
                         self.players_points[player as usize] += 1;
+                        if self.pieces.get_piece_index(eaten_piece) == 6 {
+                            self.king_eaten = self.pieces.get_team(eaten_piece);
+                            //augmenter un peu elo joueur
+                        }
                     }
 
                     // chaque déplacement rapporte un point

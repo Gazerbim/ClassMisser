@@ -389,7 +389,9 @@ impl Game {
 
                 self.previous_cursor = self.board.get_selected();
 
-                self.spawn_positions = self.board.get_spawn_positions(self.color as i8);
+                self.spawn_positions = self
+                    .board
+                    .get_spawn_positions(self.color as i8, &self.pieces);
 
                 if self.spawn_positions.is_empty() {
                     return;

@@ -15,21 +15,21 @@ impl Board {
     pub fn new(team_number: i8, board_size: usize, pieces: &Pieces) -> Board {
         let mut grid: Array2D<i8> = Array2D::filled_with(0, board_size, board_size);
         //initialisation du tableau en supposant board_size = 9
-        grid[(0, 0)] = -5;
-        grid[(board_size - 1, board_size - 1)] = -4;
+        grid[(0, 0)] = 6;
+        grid[(board_size - 1, board_size - 1)] = 6 + pieces.get_number_of_different_pieces();
         if team_number >= 3 {
-            grid[(board_size - 1, 0)] = -3;
+            grid[(board_size - 1, 0)] = 6 + 2 * pieces.get_number_of_different_pieces();
         }
         if team_number >= 4 {
-            grid[(0, board_size - 1)] = -2;
+            grid[(0, board_size - 1)] = 6 + 3 * pieces.get_number_of_different_pieces();
         }
         grid[(1, 1)] = 1;
-        grid[(board_size - 2, board_size - 2)] = 6;
+        grid[(board_size - 2, board_size - 2)] = 1 + pieces.get_number_of_different_pieces();
         if team_number >= 3 {
-            grid[(board_size - 2, 1)] = 11;
+            grid[(board_size - 2, 1)] = 1 + 2 * pieces.get_number_of_different_pieces();
         }
         if team_number >= 4 {
-            grid[(1, board_size - 2)] = 16;
+            grid[(1, board_size - 2)] = 1 + 3 * pieces.get_number_of_different_pieces();
         }
         grid[(4, 4)] = -1;
         grid[(0, 4)] = -1;
@@ -162,5 +162,18 @@ impl Board {
 
     pub fn get_selected_piece_id(&self) -> i8 {
         return self.get(self.selected_piece.0, self.selected_piece.1);
+    }
+
+    pub fn a_player_lost(&mut self, player_won: i8, player_lost: i8, pieces: &Pieces) {
+        //les pièces du joueur qui à perdu deviennent celles du joueur qui a gagné
+        for i in 0..self.board_size {
+            for j in 0..self.board_size {
+                println!("piece id: {}", self.data[(i, j)]);
+                if self.data[(i, j)] > 0 && pieces.get_team(self.data[(i, j)]) == player_lost {
+                    self.data[(i, j)] = pieces.get_piece_index(self.data[(i, j)])
+                        + player_won * pieces.get_number_of_different_pieces();
+                }
+            }
+        }
     }
 }
