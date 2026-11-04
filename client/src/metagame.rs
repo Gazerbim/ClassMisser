@@ -216,7 +216,7 @@ impl Metagame {
                 //self.state = State::Home;
             }
         } else if self.state == State::ModifyParameters {
-            let new_param = match self.parameters.update() {
+            match self.parameters.update() {
                 None => {}
                 Some(_h) => self.state = State::Home,
             };
