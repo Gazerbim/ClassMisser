@@ -3,6 +3,12 @@ use serde_json::Value;
 
 use crate::services::{chat::Chat, game::Game};
 
+pub enum PlayerState {
+    Playing,
+    Lost,
+    Disconnected,
+}
+
 pub struct Lobby {
     pub name: String,
     pub list_players: Vec<Token>,
@@ -10,7 +16,8 @@ pub struct Lobby {
     pub owner: Token,
     pub game: Game,
     pub number_of_players: i8, //nombre de joueurs, pas nombre de connectés dans le lobby
-    pub chat: Chat,            //miaou
+    pub player_states: Vec<PlayerState>,
+    pub chat: Chat, //miaou
 }
 
 impl Lobby {
@@ -71,13 +78,29 @@ impl Lobby {
     }
 
     pub fn add_player(&mut self, player_token: Token) {
+        //modifier pour quand un joueur se reconnecte
         self.list_players.push(player_token);
+        if self.list_players.len() <= self.number_of_players as usize {
+            self.player_states.push(PlayerState::Playing);
+        }
     }
 
     pub fn remove_player(&mut self, player_token: &Token) {
         for i in 0..self.list_players.len() {
             if self.list_players[i] == *player_token {
-                self.list_players.remove(i);
+                if i < self.number_of_players as usize {
+                    if self.number_of_players < self.list_players.len() as i8 {
+                        self.list_players[i] = self.list_players[self.number_of_players as usize];
+                        self.list_players.remove(self.number_of_players as usize);
+                    } else {
+                        self.player_states[i] = PlayerState::Disconnected;
+                    }
+                } else {
+                    self.list_players.remove(i);
+                }
+                if self.owner == *player_token {
+                    self.owner = self.list_players[0];
+                }
                 break;
             }
         }

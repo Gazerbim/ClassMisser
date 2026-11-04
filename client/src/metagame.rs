@@ -4,8 +4,8 @@ use serde_json::Value;
 use crate::chat::Chat;
 use crate::client::Client;
 use crate::game::Game;
+use crate::menus::config::Config;
 use crate::menus::home::Home;
-use crate::menus::config::{Config};
 use crate::types::protocol::Response;
 use crate::types::states::{Focus, State};
 
@@ -38,8 +38,6 @@ impl Metagame {
         let mut config = Config::new();
         config.load_from_file();
         print!("Configuration loaded: {:?}\n", config.options);
-
-
 
         Metagame {
             client: Client::new(host),
@@ -180,8 +178,14 @@ impl Metagame {
             }
         } else if self.state == State::InGame {
             if self.engine.is_key_pressed(console_engine::KeyCode::Esc) {
-                //envoyer une requête pour prévenir qu'on a quitté la partie (voir ce qu'on fait dans ce cas)
-                self.state = State::Home;
+                let mut req =
+                    "{\"type\": \"lobbies\",\"header\": \"quit_lobby\", \"data\": { \"name\": \""
+                        .to_string();
+                req.push_str(&self.in_lobby.get_name());
+                req.push_str("\"}}$");
+                if self.client.send(&req) {
+                    self.state = State::Home;
+                }
             } else if self.engine.is_key_pressed(console_engine::KeyCode::Tab) {
                 if self.focus == Focus::Game {
                     self.focus = Focus::Chat;
@@ -190,8 +194,15 @@ impl Metagame {
                 }
             }
             if self.focus == Focus::Game {
-                self.game
-                    .handling_hevents(&mut self.engine, self.in_lobby.get_name(), self.config.get_option("selected_texture").unwrap().as_u64().unwrap() as usize);
+                self.game.handling_hevents(
+                    &mut self.engine,
+                    self.in_lobby.get_name(),
+                    self.config
+                        .get_option("selected_texture")
+                        .unwrap()
+                        .as_u64()
+                        .unwrap() as usize,
+                );
             } else {
                 self.chat.handling_events(&self.engine, self.username.len());
             }

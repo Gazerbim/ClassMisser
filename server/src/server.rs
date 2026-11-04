@@ -363,14 +363,24 @@ impl Server {
             match (request.request_type.as_str(), request.header.as_str()) {
                 ("lobbies", _) => {
                     let mut receiver = sender.clone();
-                    let response = self.lobbies.handle_request(
+                    let (lobby, response) = self.lobbies.handle_request(
                         sender,
                         request.header.as_str(),
                         &request.data,
                         &mut receiver,
+                        &self.clients,
                     );
                     if response != String::from("") {
-                        self.send_to_client(receiver, &response)?;
+                        if lobby != "".to_string() {
+                            match self.lobbies.get_lobby_id_by_name(&lobby) {
+                                Some(_id) => {
+                                    self.broadcast_to_lobby(_id, &response).unwrap();
+                                }
+                                None => {}
+                            };
+                        } else {
+                            self.send_to_client(receiver, &response)?;
+                        }
                     }
                 }
                 ("game", "start_game") => {

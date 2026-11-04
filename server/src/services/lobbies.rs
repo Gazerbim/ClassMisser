@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, usize::MAX};
 
 use mio::Token;
 use serde_json::Value;
@@ -49,7 +49,7 @@ impl Lobbies {
         self.list.get(&id).unwrap().get_spectators()
     }
 
-    pub fn get_lobby_id_by_name(&mut self, name: &String) -> Option<usize> {
+    pub fn get_lobby_id_by_name(&self, name: &String) -> Option<usize> {
         for k in self.list.keys() {
             if self.list.get(k).unwrap().name == *name {
                 return Some(k.clone());
@@ -151,7 +151,10 @@ impl Lobbies {
         header: &str,
         data: &Value,
         receiver: &mut Token,
-    ) -> String {
+        clients: &Clients,
+    ) -> (String, String) {
+        let mut broadcast = "".to_string();
+        let mut type_response = "lobbies";
         let mut response_header = "";
         let response_data: Value = match header {
             "list_available_lobbies" => {
@@ -175,13 +178,16 @@ impl Lobbies {
                     .is_some()
                 {
                     response_header = "error";
-                    return serde_json::json!({
-                        "type": "lobbies",
-                        "header": response_header,
-                        "data": serde_json::json!({"message": "Lobby name already taken"}),
-                    })
-                    .to_string()
-                        + "$";
+                    return (
+                        "".to_string(),
+                        serde_json::json!({
+                            "type": "lobbies",
+                            "header": response_header,
+                            "data": serde_json::json!({"message": "Lobby name already taken"}),
+                        })
+                        .to_string()
+                            + "$",
+                    );
                 }
                 let mut new_id = self.list.len();
                 if self.availables_ids_for_lobby.len() > 0 {
@@ -200,6 +206,7 @@ impl Lobbies {
                         game: Game::empty(),
                         chat: Chat::new(),
                         number_of_players: 0,
+                        player_states: Vec::new(),
                     },
                 );
                 response_header = "created_lobby";
@@ -238,26 +245,29 @@ impl Lobbies {
                 let mut data_value: Value = serde_json::json!({});
                 let mut lobby_name_to_delete = "".to_string();
                 for l in self.list.values_mut() {
-                    if l.name == data["name"].to_string() {
-                        let before_size = l.list_players.len();
-                        for i in 0..l.list_players.len() {
-                            if l.list_players[i] == sender {
-                                l.list_players.remove(i);
-                                if sender == l.owner && before_size > 1 {
-                                    l.owner = l.list_players[0];
-                                    data_value = serde_json::json!({"name": l.name.clone()});
-                                    response_header = "grant_ownership";
-                                    *receiver = l.owner.clone();
-                                }
-                                break;
-                            }
+                    let name = data["name"].to_string();
+                    let name = name.clone()[1..name.len() - 1].to_string();
+                    if l.name == name {
+                        l.remove_player(&sender);
+                        broadcast = l.name.clone();
+                        let mut players: Vec<String> = Vec::new();
+                        let mut spectators: Vec<String> = Vec::new();
+                        for t in l.get_players() {
+                            let username = clients.get_username(&t);
+                            players.push(username);
                         }
-                        if before_size != l.list_players.len() {
-                            if l.list_players.len() == 0 {
-                                lobby_name_to_delete = l.name.clone();
-                            }
-                            break;
+                        for t in l.get_spectators() {
+                            let username = clients.get_username(&t);
+                            spectators.push(username);
                         }
+                        data_value = serde_json::json!({ "new_players": players, "new_spectators": spectators});
+                        response_header = "update_players";
+                        type_response = "game";
+                        //à revoir ! c'est toujours faux!!!!
+                        if l.list_players.len() == 0 {
+                            lobby_name_to_delete = l.name.clone();
+                        }
+                        break;
                     }
                 }
                 self.delete_lobby_by_name(lobby_name_to_delete);
@@ -266,14 +276,17 @@ impl Lobbies {
             _ => serde_json::json!({}),
         };
         if response_data == serde_json::json!({}) {
-            return String::from("");
+            return ("".to_string(), String::from(""));
         }
-        serde_json::json!({
-            "type": "lobbies",
-            "header": response_header,
-            "data": response_data,
-        })
-        .to_string()
-            + "$"
+        (
+            broadcast,
+            serde_json::json!({
+                "type": type_response,
+                "header": response_header,
+                "data": response_data,
+            })
+            .to_string()
+                + "$",
+        )
     }
 }

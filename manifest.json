@@ -169,12 +169,12 @@
 	},
 	{
 		"request": {
-			"type": "game",
+			"type": "lobby",
 			"header": "quitted_game",
-			"data": "{}"
+			"data": "{ lobby_name: String }"
 		},
 		"response": {
-		  "type": "game",
+		  "type": "lobby",
 			"header": "game_quitted",
 			"data": "{}"
 		}
