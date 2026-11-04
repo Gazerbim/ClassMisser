@@ -11,6 +11,7 @@ pub struct Piece {
     pub label: char,
     pub team: i8,
     eating_moves: Vec<Move>,
+    is_king: bool,
 }
 
 impl Piece {
@@ -23,6 +24,7 @@ impl Piece {
         label: char,
         team: i8,
         eating_moves: Vec<Move>,
+        is_king: bool,
     ) -> Piece {
         Piece {
             name: name,
@@ -33,6 +35,7 @@ impl Piece {
             label: label,
             team: team,
             eating_moves: eating_moves,
+            is_king: is_king,
         }
     }
 
@@ -42,5 +45,13 @@ impl Piece {
 
     pub fn get_label(&self) -> &char {
         &self.label
+    }
+
+    pub fn is_king(&self) -> bool {
+        self.is_king
+    }
+
+    pub fn get_name(&self) -> &str {
+        &self.name
     }
 }

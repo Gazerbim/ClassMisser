@@ -6,6 +6,7 @@ pub struct Pieces {
     pieces: Vec<Piece>,
     team_number: i8,
     number_of_different_pieces: i8,
+    king_index: i8,
 }
 
 impl Pieces {
@@ -14,6 +15,7 @@ impl Pieces {
             pieces: Vec::new(),
             team_number: 0,
             number_of_different_pieces: 0,
+            king_index: -1,
         }
     }
 
@@ -39,6 +41,7 @@ impl Pieces {
             pieces: pieces_final,
             team_number: team_number,
             number_of_different_pieces: number_of_different_pieces,
+            king_index: -1,
         }
     }
 
@@ -142,5 +145,26 @@ impl Pieces {
         self.get_all_costs()
             .iter()
             .any(|&cost| cost >= 0 && points >= cost as usize)
+    }
+
+    pub fn get_piece_by_name(&self, name: &str) -> Option<&Piece> {
+        self.pieces.iter().find(|piece| piece.get_name() == name)
+    }
+
+    pub fn get_first_king_index(&self) -> i8 {
+        self.pieces.iter().find(|piece| piece.is_king()).map(|piece| piece.index).expect("You dont have any king registered ! Add a king to the pieces file")
+    }
+
+    pub fn get_king_index(&mut self) -> i8 {
+        self.king_index
+    }
+
+    pub fn get_team_king_id(&self, team: i8) -> i8 {
+        let king_index = self.get_first_king_index();
+        king_index + team * self.number_of_different_pieces
+    }
+
+    pub fn set_king_index(&mut self, index: i8) {
+        self.king_index = index;
     }
 }

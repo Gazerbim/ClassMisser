@@ -6,6 +6,7 @@ pub struct Pieces {
     pieces: Vec<Piece>,
     team_number: i8,
     unic_pieces: i8,
+    king_index: i8,
 }
 
 impl Pieces {
@@ -14,6 +15,7 @@ impl Pieces {
             pieces: Vec::new(),
             team_number: 0,
             unic_pieces: 0,
+            king_index: -1,
         }
     }
 
@@ -42,6 +44,7 @@ impl Pieces {
 
         self.pieces = pieces_final;
         self.team_number = team_number;
+        self.king_index = self.get_first_king_index();
         true
     }
 
@@ -71,5 +74,26 @@ impl Pieces {
             .iter()
             .find(|piece| piece.index == global_id)
             .map(|piece| piece.get_cost())
+    }
+
+    pub fn get_piece_by_name(&self, name: &str) -> Option<&Piece> {
+        self.pieces.iter().find(|piece| piece.get_name() == name)
+    }
+
+    pub fn get_first_king_index(&self) -> i8 {
+        self.pieces.iter().find(|piece| piece.is_king()).map(|piece| piece.index).expect("You dont have any king registered ! Add a king to the pieces file")
+    }
+
+    pub fn get_king_index(&mut self) -> i8 {
+        self.king_index
+    }
+
+    pub fn get_team_king_id(&self, team: i8) -> i8 {
+        let king_index = self.get_first_king_index();
+        king_index + team * self.unic_pieces
+    }
+
+    pub fn set_king_index(&mut self, index: i8) {
+        self.king_index = index;
     }
 }
