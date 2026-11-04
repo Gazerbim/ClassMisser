@@ -26,6 +26,7 @@ pub struct Game {
     team_number: i8,
     players_names: Vec<String>,
     spectators_names: Vec<String>,
+    selected_texture: usize,
 }
 
 impl Game {
@@ -53,6 +54,7 @@ impl Game {
                 "Axel".to_string(),
             ],
             spectators_names: vec!["Jules".to_string(), "Louan".to_string()],
+            selected_texture: 0,
         }
     }
 
@@ -208,7 +210,6 @@ impl Game {
                     }
                 }
 
-                // Les points d'abord : le menu de choix de pièce en dépend.
                 if let Some(points) = response.data["players_points"].as_array() {
                     for (i, point) in points.iter().enumerate().take(4) {
                         if let Some(value) = point.as_u64() {
@@ -276,7 +277,7 @@ impl Game {
         }
     }
 
-    pub fn handling_hevents(&mut self, e: &mut ConsoleEngine, lobby_name: String) {
+    pub fn handling_hevents(&mut self, e: &mut ConsoleEngine, lobby_name: String, texture: usize) {
         // choisir une case de spawn pour la pièce sélectionnée
         if self.choosing_spawn {
             if self.spawn_positions.is_empty() {
@@ -466,7 +467,7 @@ impl Game {
 
     pub fn display(&mut self, e: &mut ConsoleEngine) {
         // Afficher le plateau
-        self.board.display(e, &self.pieces, &self.team_colors);
+        self.board.display(e, &self.pieces, &self.team_colors, self.selected_texture);
 
         // message d'attente
         if self.is_playing != self.color {
@@ -552,11 +553,16 @@ impl Game {
             let can_buy = affordable.contains(&i);
             let selected = can_buy && i == self.selected_piece;
 
-            // marqueur visuel pour la pièce actuellement sélectionnée.
+            // marqueur visuel pour la pièce actuellement sélectionnée
             e.print(x, y - 1, if selected { ">" } else { " " });
-
+            
+            let label: String;
             // nom de la pièce et son prix -> grisé si pas assez de points
-            let label = format!("{} {} pts", piece.label, cost);
+            if self.selected_texture == 0 {
+                label = format!("{} {} pts", piece.label, cost);
+            } else {
+                label = format!("{} {} pts", piece.label_bis, cost);
+            }
             if can_buy {
                 e.print(x, y, &label);
             } else {

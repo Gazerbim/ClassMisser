@@ -129,6 +129,7 @@ impl Board {
         highlight_playable: bool,
         pieces: &Pieces,
         team_colors: &[Color; 4],
+        selected_texture: usize,
     ) {
         const WIDTH: usize = 5;
         const HEIGHT: usize = 3;
@@ -193,7 +194,7 @@ impl Board {
                 (screen_x + 1) as i32,
                 (screen_y + 1) as i32,
                 pixel::pxl_fbg(
-                    *pieces.get_piece_from_id(value).get_label(),
+                    *pieces.get_piece_from_id(value).get_label(selected_texture),
                     Color::Black,
                     color,
                 ),
@@ -206,6 +207,7 @@ impl Board {
         engine: &mut ConsoleEngine,
         pieces: &Pieces,
         team_colors: &[Color; 4],
+        selected_texture: usize,
     ) {
         for y in 0..self.board_size {
             for x in 0..self.board_size {
@@ -220,6 +222,7 @@ impl Board {
                         .any(|m| m.x == x as i8 && m.y == y as i8),
                     pieces,
                     team_colors,
+                    selected_texture
                 );
             }
         }

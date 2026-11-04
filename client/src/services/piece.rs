@@ -36,8 +36,12 @@ impl Piece {
         self.cost
     }
 
-    pub fn get_label(&self) -> &char {
-        &self.label
+    pub fn get_label(&self, selected_texture: usize) -> &char {
+        if selected_texture == 0 {
+            &self.label
+        } else {
+            &self.label_bis
+        }
     }
 
     pub fn is_king(&self) -> bool {
