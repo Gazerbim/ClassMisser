@@ -20,7 +20,9 @@ impl Lobby {
         board_size: usize,
     ) -> (Vec<usize>, Vec<usize>, Vec<i8>) {
         self.game = Game::new(number_team, board_size);
-        self.game.pieces.set_king_index(self.game.pieces.get_first_king_index());
+        self.game
+            .pieces
+            .set_king_index(self.game.pieces.get_first_king_index());
         self.number_of_players = number_team;
         self.in_game = true;
         self.game.board.get_simplfied_board()
@@ -44,7 +46,9 @@ impl Lobby {
         //     println!("{}", self.list_players[i].0);
         // }
         for i in 0..self.number_of_players {
-            players.push(self.list_players[i as usize]);
+            if i < self.list_players.len() as i8 {
+                players.push(self.list_players[i as usize]);
+            }
         }
         players
     }
