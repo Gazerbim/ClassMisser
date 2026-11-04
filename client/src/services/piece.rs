@@ -6,7 +6,7 @@ pub struct Piece {
     pub index: i8,
     cost: i8,
     pub label: char,
-    pub label_bis: char,
+    pub custom_label: char,
     pub team: i8,
     is_king: bool,
 }
@@ -17,7 +17,7 @@ impl Piece {
         index: i8,
         cost: i8,
         label: char,
-        label_bis: char,
+        custom_label: char,
         team: i8,
         is_king: bool,
     ) -> Piece {
@@ -26,7 +26,7 @@ impl Piece {
             index: index,
             cost: cost,
             label: label,
-            label_bis: label_bis,
+            custom_label: custom_label,
             team: team,
             is_king: is_king,
         }
@@ -40,7 +40,7 @@ impl Piece {
         if selected_texture == 0 {
             &self.label
         } else {
-            &self.label_bis
+            &self.custom_label
         }
     }
 

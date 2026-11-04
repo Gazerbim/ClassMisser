@@ -1,6 +1,5 @@
 use std::collections::HashMap;
 
-use console_engine::ConsoleEngine;
 use serde_json::Value;
 
 const CONFIG_FILE_PATH: &str = "src/data/config.json";

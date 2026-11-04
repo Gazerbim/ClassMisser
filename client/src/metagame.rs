@@ -5,7 +5,7 @@ use crate::chat::Chat;
 use crate::client::Client;
 use crate::game::Game;
 use crate::menus::home::Home;
-use crate::menus::config::{self, Config};
+use crate::menus::config::{Config};
 use crate::types::protocol::Response;
 use crate::types::states::{Focus, State};
 

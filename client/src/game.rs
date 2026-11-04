@@ -1,4 +1,3 @@
-use std::os::linux::raw::stat;
 
 use console_engine::{Color, ConsoleEngine, KeyCode, pixel};
 use serde_json::Value;
@@ -279,6 +278,8 @@ impl Game {
 
     pub fn handling_hevents(&mut self, e: &mut ConsoleEngine, lobby_name: String, texture: usize) {
         // choisir une case de spawn pour la pièce sélectionnée
+        self.selected_texture = texture;
+
         if self.choosing_spawn {
             if self.spawn_positions.is_empty() {
                 self.choosing_spawn = false;
@@ -556,13 +557,8 @@ impl Game {
             // marqueur visuel pour la pièce actuellement sélectionnée
             e.print(x, y - 1, if selected { ">" } else { " " });
             
-            let label: String;
             // nom de la pièce et son prix -> grisé si pas assez de points
-            if self.selected_texture == 0 {
-                label = format!("{} {} pts", piece.label, cost);
-            } else {
-                label = format!("{} {} pts", piece.label_bis, cost);
-            }
+            let label = format!("{} {} pts", piece.get_label(self.selected_texture), cost);
             if can_buy {
                 e.print(x, y, &label);
             } else {
