@@ -26,7 +26,7 @@ pub struct Server {
 impl Server {
     pub fn new(port: u16) -> Server {
         Server {
-            address: String::from("127.0.0.1"),
+            address: String::from("0.0.0.0"),
             port: port.to_string(),
             lobbies: Lobbies::new(),
             clients: Clients::new(),
