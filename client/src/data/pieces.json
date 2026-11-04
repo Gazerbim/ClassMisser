@@ -17,7 +17,8 @@
             { "x": -1, "y": 1},
             { "x": -1, "y": -1}
         ],
-        "team":0
+        "team":0,
+        "is_king": false
     },
     {
         "name": "tour",
@@ -32,7 +33,8 @@
         "cost":5,
         "label":"♖",
         "eating_moves": [],
-        "team":0
+        "team":0,
+        "is_king": false
     },
     {
         "name": "fou",
@@ -47,7 +49,8 @@
         "cost":3,
         "label":"♗",
         "eating_moves": [],
-        "team":0
+        "team":0,
+        "is_king": false
     },
     {
         "name": "cavalier",
@@ -66,7 +69,8 @@
         "cost":3,
         "label":"♘",
         "eating_moves": [],
-        "team":0
+        "team":0,
+        "is_king": false
     },
     {
         "name": "dame",
@@ -85,7 +89,8 @@
         "cost":9,
         "label":"♕",
         "eating_moves": [],
-        "team":0
+        "team":0,
+        "is_king": false
     },
     {
         "name": "roi",
@@ -95,6 +100,7 @@
         "cost":100,
         "label":" ",
         "eating_moves": [],
-        "team":0
+        "team":0,
+        "is_king": true
     }
 ]

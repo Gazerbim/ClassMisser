@@ -540,6 +540,9 @@ impl Game {
 
         for i in 1..=count {
             let piece_id = i as i8 + team * count as i8;
+            if piece_id == self.pieces.get_team_king_id(team) {
+                continue;
+            }
             let piece = self.pieces.get_piece_from_id(piece_id);
             let cost = self.pieces.get_piece_cost(i as i8, team).unwrap_or(0);
 

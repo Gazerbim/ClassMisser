@@ -401,6 +401,10 @@ impl Game {
                     || sender >= self.team_number
                     || !self.has_moved
                 {
+                    println!(
+                        "spawn_piece: sender {} is not the player playing {} or has_moved {}",
+                        sender, self.player_playing, self.has_moved
+                    );
                     return reject();
                 }
 
@@ -409,22 +413,28 @@ impl Game {
 
                 if piece < 1 || piece > count || x >= size || y >= size || self.board.get(x, y) != 0
                 {
+                    println!(
+                        "piece {} ou position ({},{}) invalide pour le joueur {}",
+                        piece, x, y, sender
+                    );
                     return reject();
                 }
 
                 let Some(cost) = self.pieces.get_piece_cost(piece) else {
+                    println!("piece {} not found", piece);
                     return reject();
                 };
 
                 if cost < 0 || self.players_points[sender as usize] < cost as usize {
+                    println!("player {} has {} points but piece {} costs {}", sender, self.players_points[sender as usize], piece, cost);
                     return reject();
                 }
 
                 let king_id = match sender {
-                    0 => 6,
-                    1 => 6 + count,
-                    2 => 6 + 2 * count,
-                    3 => 6 + 3 * count,
+                    0 => self.pieces.get_king_index(),
+                    1 => self.pieces.get_team_king_id(1),
+                    2 => self.pieces.get_team_king_id(2),
+                    3 => self.pieces.get_team_king_id(3),
                     _ => return reject(),
                 };
 
@@ -434,6 +444,10 @@ impl Game {
                     for kx in 0..size {
                         if self.board.get(kx, ky) == king_id {
                             king_position = Some((kx, ky));
+                            println!(
+                                "king (id: {}) found for player {} at position ({},{})",
+                                king_id, sender, kx, ky
+                            );
                             break;
                         }
                     }
@@ -444,6 +458,7 @@ impl Game {
                 }
 
                 let Some((kx, ky)) = king_position else {
+                    println!("king not found for player {}", sender);
                     return reject();
                 };
 
@@ -451,6 +466,10 @@ impl Game {
                 let dy = (y as isize - ky as isize).abs();
 
                 if dx > 1 || dy > 1 || (dx == 0 && dy == 0) {
+                    println!(
+                        "spawn_piece: position ({},{}) is not adjacent to king at ({},{}) for player {}",
+                        x, y, kx, ky, sender
+                    );
                     return reject();
                 }
 
@@ -588,7 +607,7 @@ impl Game {
                     //si on mange une piece, on ajoute les points du joueur
                     if eaten_piece > 0 {
                         self.players_points[player as usize] += 1;
-                        if self.pieces.get_piece_index(eaten_piece) == 6 {
+                        if self.pieces.get_piece_index(eaten_piece) == self.pieces.get_king_index() {
                             self.king_eaten = self.pieces.get_team(eaten_piece);
                             //augmenter un peu elo joueur
                         }
