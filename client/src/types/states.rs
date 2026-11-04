@@ -7,6 +7,7 @@ pub enum State {
     CreateLobby,
     InLobby,
     InGame,
+    ModifyParameters,
 }
 
 #[derive(PartialEq)]

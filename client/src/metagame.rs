@@ -5,6 +5,7 @@ use crate::chat::Chat;
 use crate::client::Client;
 use crate::game::Game;
 use crate::menus::home::Home;
+use crate::menus::options::Options;
 use crate::types::protocol::Response;
 use crate::types::states::{Focus, State};
 
@@ -26,6 +27,7 @@ pub struct Metagame {
     lobby_selector: SelectLobby,
     lobby_creator: TextInput,
     in_lobby: InLobby,
+    parameters: Options,
 
     username: String,
     password: String,
@@ -43,10 +45,12 @@ impl Metagame {
             home: SelectLobby::new(vec![
                 String::from("Créer un salon"),
                 String::from("Rejoindre un salon"),
+                String::from("Paramètres"),
                 String::from("Quitter"),
             ]),
             home_layout: Home::new(),
             enter_username: TextInput::new(String::from("Rentre to pseudo ici:"), 25),
+            parameters: Options::new(),
             lobby_selector: SelectLobby::new(Vec::new()),
             lobby_creator: TextInput::new("Nom du salon à créer".to_string(), 25),
             in_lobby: InLobby::new("".to_string()),
@@ -122,6 +126,8 @@ impl Metagame {
                 }
             } else if action == "Créer un salon".to_string() {
                 self.state = State::CreateLobby;
+            } else if action == "Paramètres".to_string() {
+                self.state = State::ModifyParameters;
             }
 
             if self.engine.is_key_pressed(console_engine::KeyCode::Esc) {
@@ -132,6 +138,11 @@ impl Metagame {
             if self.engine.is_key_pressed(console_engine::KeyCode::Esc) {
                 return true; // exits app
             }
+        } else if self.state == State::ModifyParameters {
+            if self.engine.is_key_pressed(console_engine::KeyCode::Esc) {
+                self.state = State::Home;
+            }
+            self.parameters.handling_events(&self.engine);
         } else if self.state == State::CreateLobby {
             self.lobby_creator.handling_events(&self.engine);
             if self.engine.is_key_pressed(console_engine::KeyCode::Esc) {
@@ -204,6 +215,11 @@ impl Metagame {
                 self.client.send(&req);
                 //self.state = State::Home;
             }
+        } else if self.state == State::ModifyParameters {
+            let new_param = match self.parameters.update() {
+                None => {}
+                Some(_h) => self.state = State::Home,
+            };
         } else if self.state == State::ChooseLobby {
             self.lobby_selector.update();
         } else if self.state == State::CreateLobby {
@@ -252,6 +268,9 @@ impl Metagame {
                 .display(&mut self.engine, (left_third - 3, top_left * 4 / 15));
         } else if self.state == State::EnterPseudo {
             self.enter_username
+                .display(&mut self.engine, (left_third, top_left));
+        } else if self.state == State::ModifyParameters {
+            self.parameters
                 .display(&mut self.engine, (left_third, top_left));
         } else if self.state == State::ChooseLobby {
             self.lobby_selector
