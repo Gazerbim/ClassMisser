@@ -1,16 +1,13 @@
-use crate::services::move_json::Move;
 use serde::Deserialize;
 
 #[derive(Debug, Deserialize, Clone)]
 pub struct Piece {
     name: String,
     pub index: i8,
-    pub moves: Vec<Move>,
-    extendable: bool,
     cost: i8,
     pub label: char,
+    pub custom_label: char,
     pub team: i8,
-    eating_moves: Vec<Move>,
     is_king: bool,
 }
 
@@ -18,23 +15,19 @@ impl Piece {
     pub fn new(
         name: String,
         index: i8,
-        moves: Vec<Move>,
-        extendable: bool,
         cost: i8,
         label: char,
+        custom_label: char,
         team: i8,
-        eating_moves: Vec<Move>,
         is_king: bool,
     ) -> Piece {
         Piece {
             name: name,
             index: index,
-            moves: moves,
-            extendable: extendable,
             cost: cost,
             label: label,
+            custom_label: custom_label,
             team: team,
-            eating_moves: eating_moves,
             is_king: is_king,
         }
     }
@@ -43,8 +36,12 @@ impl Piece {
         self.cost
     }
 
-    pub fn get_label(&self) -> &char {
-        &self.label
+    pub fn get_label(&self, selected_texture: usize) -> &char {
+        if selected_texture == 0 {
+            &self.label
+        } else {
+            &self.custom_label
+        }
     }
 
     pub fn is_king(&self) -> bool {

@@ -5,7 +5,7 @@ use crate::chat::Chat;
 use crate::client::Client;
 use crate::game::Game;
 use crate::menus::home::Home;
-use crate::menus::options::Options;
+use crate::menus::config::{Config};
 use crate::types::protocol::Response;
 use crate::types::states::{Focus, State};
 
@@ -27,7 +27,7 @@ pub struct Metagame {
     lobby_selector: SelectLobby,
     lobby_creator: TextInput,
     in_lobby: InLobby,
-    parameters: Options,
+    config: Config,
 
     username: String,
     password: String,
@@ -35,6 +35,12 @@ pub struct Metagame {
 
 impl Metagame {
     pub fn new(host: &String) -> Metagame {
+        let mut config = Config::new();
+        config.load_from_file();
+        print!("Configuration loaded: {:?}\n", config.options);
+
+
+
         Metagame {
             client: Client::new(host),
             engine: console_engine::ConsoleEngine::init_fill(20).unwrap(),
@@ -50,7 +56,7 @@ impl Metagame {
             ]),
             home_layout: Home::new(),
             enter_username: TextInput::new(String::from("Rentre to pseudo ici:"), 25),
-            parameters: Options::new(),
+            config: config,
             lobby_selector: SelectLobby::new(Vec::new()),
             lobby_creator: TextInput::new("Nom du salon à créer".to_string(), 25),
             in_lobby: InLobby::new("".to_string()),
@@ -138,11 +144,6 @@ impl Metagame {
             if self.engine.is_key_pressed(console_engine::KeyCode::Esc) {
                 return true; // exits app
             }
-        } else if self.state == State::ModifyParameters {
-            if self.engine.is_key_pressed(console_engine::KeyCode::Esc) {
-                self.state = State::Home;
-            }
-            self.parameters.handling_events(&self.engine);
         } else if self.state == State::CreateLobby {
             self.lobby_creator.handling_events(&self.engine);
             if self.engine.is_key_pressed(console_engine::KeyCode::Esc) {
@@ -190,7 +191,7 @@ impl Metagame {
             }
             if self.focus == Focus::Game {
                 self.game
-                    .handling_hevents(&mut self.engine, self.in_lobby.get_name());
+                    .handling_hevents(&mut self.engine, self.in_lobby.get_name(), self.config.get_option("selected_texture").unwrap().as_u64().unwrap() as usize);
             } else {
                 self.chat.handling_events(&self.engine, self.username.len());
             }
@@ -215,11 +216,6 @@ impl Metagame {
                 self.client.send(&req);
                 //self.state = State::Home;
             }
-        } else if self.state == State::ModifyParameters {
-            match self.parameters.update() {
-                None => {}
-                Some(_h) => self.state = State::Home,
-            };
         } else if self.state == State::ChooseLobby {
             self.lobby_selector.update();
         } else if self.state == State::CreateLobby {
@@ -268,9 +264,6 @@ impl Metagame {
                 .display(&mut self.engine, (left_third - 3, top_left * 4 / 15));
         } else if self.state == State::EnterPseudo {
             self.enter_username
-                .display(&mut self.engine, (left_third, top_left));
-        } else if self.state == State::ModifyParameters {
-            self.parameters
                 .display(&mut self.engine, (left_third, top_left));
         } else if self.state == State::ChooseLobby {
             self.lobby_selector

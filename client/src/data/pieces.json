@@ -2,104 +2,54 @@
     {
         "name": "pion",
         "index": 1,
-        "moves": [
-            { "x": 1, "y": 0 },
-            { "x": 0, "y": 1 },
-            { "x": 0, "y": -1 },
-            { "x": -1, "y": 0 }
-        ],
-        "extendable":false,
         "cost":2,
         "label":"♙",
-        "eating_moves": [
-            { "x": 1, "y": 1},
-            { "x": 1, "y": -1},
-            { "x": -1, "y": 1},
-            { "x": -1, "y": -1}
-        ],
+        "custom_label":"P",
         "team":0,
         "is_king": false
     },
     {
         "name": "tour",
         "index": 2,
-        "moves": [
-            { "x": 1, "y": 0 },
-            { "x": 0, "y": 1 },
-            { "x": 0, "y": -1 },
-            { "x": -1, "y": 0 }
-        ],
-        "extendable":true,
         "cost":5,
         "label":"♖",
-        "eating_moves": [],
+        "custom_label":"T",
         "team":0,
         "is_king": false
     },
     {
         "name": "fou",
         "index": 3,
-        "moves": [
-            { "x": 1, "y": 1 },
-            { "x": -1, "y": 1 },
-            { "x": 1, "y": -1 },
-            { "x": -1, "y": -1 }
-        ],
-        "extendable":true,
         "cost":3,
         "label":"♗",
-        "eating_moves": [],
+        "custom_label":"F",
         "team":0,
         "is_king": false
     },
     {
         "name": "cavalier",
         "index": 4,
-        "moves": [
-            { "x": 2, "y": 1 },
-            { "x": 1, "y": 2 },
-            { "x": -1, "y": 2},
-            { "x": 2, "y": -1 },
-            { "x": -2, "y": 1 },
-            { "x": 1, "y": -2 },
-            { "x": -1, "y": -2},
-            { "x": -2, "y": -1 }
-        ],
-        "extendable":false,
         "cost":3,
         "label":"♘",
-        "eating_moves": [],
+        "custom_label":"C",
         "team":0,
         "is_king": false
     },
     {
         "name": "dame",
         "index": 5,
-        "moves": [
-            { "x": 1, "y": 1 },
-            { "x": -1, "y": 1 },
-            { "x": 1, "y": -1 },
-            { "x": -1, "y": -1 },
-            { "x": 1, "y": 0 },
-            { "x": 0, "y": 1 },
-            { "x": 0, "y": -1 },
-            { "x": -1, "y": 0 }
-        ],
-        "extendable":true,
         "cost":9,
         "label":"♕",
-        "eating_moves": [],
+        "custom_label":"D",
         "team":0,
         "is_king": false
     },
     {
         "name": "roi",
         "index": 6,
-        "moves": [],
-        "extendable":false,
         "cost":100,
         "label":" ",
-        "eating_moves": [],
+        "custom_label":"K",
         "team":0,
         "is_king": true
     }

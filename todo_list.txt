@@ -1,7 +1,6 @@
 En vrac:
 -> éliminer un joueur (refaire gestion joueur côté serveur)
 -> corriger bug crash server quand un client se déconnecte
--> pack de texture
 -> améliorer chat
 -> sychronisation pièces client/serveur
 -> sycrhronisation version client/serveur
