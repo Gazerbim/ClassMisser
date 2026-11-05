@@ -167,4 +167,12 @@ impl Pieces {
     pub fn set_king_index(&mut self, index: i8) {
         self.king_index = index;
     }
+
+
+    //reads the pieces from the json file and returns them as a string
+    pub fn read_pieces_from_json_file() -> String {
+        let content =
+            std::fs::read_to_string("src/data/pieces.json").expect("error when reading the file");
+        content
+    }
 }

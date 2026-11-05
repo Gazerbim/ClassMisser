@@ -34,6 +34,10 @@ pub struct Metagame {
 }
 
 impl Metagame {
+    pub fn getClient(&mut self) -> &mut Client {
+        &mut self.client
+    }
+
     pub fn new(host: &String) -> Metagame {
         let mut config = Config::new();
         config.load_from_file();

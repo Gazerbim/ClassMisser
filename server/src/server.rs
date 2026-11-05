@@ -7,6 +7,7 @@ use std::net::SocketAddr;
 
 use crate::services::account_manager::AccountManager;
 use crate::services::clients::{Client, Clients};
+use crate::services::game_services::pieces;
 use crate::services::lobbies::Lobbies;
 use crate::services::players::{Player, Players};
 use crate::services::protocol::Request;
@@ -420,6 +421,18 @@ impl Server {
                             println!("Lobby {} not found", lobby_name)
                         }
                     }
+                }
+                ("send_pieces", _) => {
+                    println!("send_pieces request received from client {:?}", sender);
+                    let pieces_json = pieces::Pieces::read_pieces_from_json_file();
+                    self.send_to_client(
+                        sender,
+                        &Self::make_response(
+                            "send_pieces",
+                            "pieces",
+                            serde_json::json!({"pieces": pieces_json}),
+                        ),
+                    )?;
                 }
                 _ => {
                     eprintln!(
