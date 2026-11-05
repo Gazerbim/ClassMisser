@@ -7,8 +7,11 @@ pub mod services;
 pub mod types;
 
 use crate::metagame::Metagame;
+use crate::services::pieces_synchronisation;
 
 use clap::Parser;
+
+const PIECES_JSON: &str = "src/data/pieces.json";
 
 #[derive(Parser)]
 struct Cli {
@@ -20,6 +23,44 @@ struct Cli {
 
     #[arg(long)]
     action: Option<String>,
+}
+
+
+fn synchronise_pieces(game: &mut Metagame) {
+    let request = String::from("{ \"type\": \"send_pieces\", \"header\": \"send_pieces\" }$");
+    if !game.getClient().send(&request) {
+        eprintln!("Impossible d'envoyer la demande de pièces au serveur");
+        return;
+    }
+ 
+    let start = std::time::Instant::now();
+    let message = loop {
+        if let Some(m) = game.getClient().receive_message() {
+            break m;
+        }
+        if start.elapsed() > std::time::Duration::from_secs(5) {
+            eprintln!("Pas de réponse du serveur pour la synchronisation des pièces");
+            return;
+        }
+        std::thread::sleep(std::time::Duration::from_millis(10));
+    };
+ 
+    let response: serde_json::Value = match serde_json::from_str(&message) {
+        Ok(v) => v,
+        Err(e) => {
+            eprintln!("Réponse pièces invalide: {e}");
+            return;
+        }
+    };
+    let pieces = match &response["data"]["pieces"] {
+        serde_json::Value::String(s) => s.clone(),
+        serde_json::Value::Null => {
+            eprintln!("Réponse pièces sans champ data.pieces: {message}");
+            return;
+        }
+        other => other.to_string(),
+    };
+    pieces_synchronisation::synchronise_pieces(pieces, PIECES_JSON);
 }
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -41,6 +82,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     };
     println!("tried to connect");
     if connected {
+
+        synchronise_pieces(&mut game);
+
         game.main_loop();
     } else {
         println!("Impossible de lancer le jeux...");
