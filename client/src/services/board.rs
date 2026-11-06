@@ -17,6 +17,14 @@ impl Board {
         self.board_size
     }
 
+    pub fn set_board(&mut self, data: Array2D<i8>) {
+        self.data = data;
+    }
+
+    pub fn get_board(&self) -> &Array2D<i8> {
+        &self.data
+    }
+
     pub fn set_selected(&mut self, x: usize, y: usize) {
         if x < self.board_size && y < self.board_size {
             self.selected = (x, y);

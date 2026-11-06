@@ -1,7 +1,8 @@
 use crate::services::piece::Piece;
 use std;
+use serde::{Serialize, Deserialize};
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Pieces {
     pieces: Vec<Piece>,
     team_number: i8,
