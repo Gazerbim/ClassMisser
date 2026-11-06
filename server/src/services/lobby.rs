@@ -128,7 +128,7 @@ impl Lobby {
                 } else {
                     self.list_players.remove(i);
                 }
-                if self.owner == *player_token {
+                if self.owner == *player_token && self.list_players.len() != 0 {
                     self.owner = self.list_players[0];
                 }
                 break;

@@ -26,6 +26,7 @@ pub struct Game {
     players_names: Vec<String>,
     spectators_names: Vec<String>,
     selected_texture: usize,
+    username: String,
 }
 
 impl Game {
@@ -49,6 +50,7 @@ impl Game {
             players_names: vec![],
             spectators_names: vec![],
             selected_texture: 0,
+            username: "".to_string(),
         }
     }
 
@@ -74,6 +76,7 @@ impl Game {
         pieces: &Vec<Value>,
         new_players: Vec<String>,
         new_spectators: Vec<String>,
+        username: String,
     ) {
         let mut xc: Vec<usize> = Vec::new();
         let mut yc: Vec<usize> = Vec::new();
@@ -103,6 +106,7 @@ impl Game {
         self.team_number = team_number;
         self.players_names = new_players;
         self.spectators_names = new_spectators;
+        self.username = username;
 
         // restore base state.
         self.players_points = [0; 4];
@@ -148,6 +152,16 @@ impl Game {
                     self.players_names = new_players;
                 } else {
                     //erreur ! Je ne sais pas quoi faire
+                }
+
+                if self.color as i8 >= self.team_number {
+                    for i in 0..self.players_names.len() {
+                        if self.players_names[i] == self.username {
+                            //je suis devenu joueur
+                            self.color = i as i32;
+                            break;
+                        }
+                    }
                 }
 
                 let mut new_spectators: Vec<String> = Vec::new();

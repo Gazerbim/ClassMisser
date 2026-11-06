@@ -482,6 +482,7 @@ impl Metagame {
                     pieces,
                     new_players,
                     new_spectators,
+                    self.username.clone(),
                 );
                 self.state = State::InGame
             }
