@@ -200,6 +200,7 @@ pub struct Game {
     // tour = 1 déplacement, puis (optionnellement) 1 pièce à faire apparaître.
     has_moved: bool,
     king_eaten: i8, //>=0 si le joueur mange un roi lors de ce tour
+    afk_players: Vec<bool>,
 }
 
 impl Game {
@@ -213,6 +214,7 @@ impl Game {
             players_points: [0, 0, 0, 0],
             has_moved: false,
             king_eaten: -1,
+            afk_players: vec![false, false, false, false],
         }
     }
 
@@ -225,13 +227,21 @@ impl Game {
             players_points: [0, 0, 0, 0],
             has_moved: false,
             king_eaten: -1,
+            afk_players: vec![false, false, false, false],
         }
+    }
+
+    pub fn set_player_afk_state(&mut self, to_change: usize, new_state: bool) {
+        self.afk_players[to_change] = new_state;
     }
 
     /// passe la main au joueur suivant.
     fn end_turn(&mut self) {
         println!("end turn");
         self.player_playing = (self.player_playing + 1) % self.team_number;
+        while self.afk_players[self.player_playing as usize] {
+            self.player_playing = (self.player_playing + 1) % self.team_number;
+        }
         self.has_moved = false;
     }
 
@@ -426,7 +436,10 @@ impl Game {
                 };
 
                 if cost < 0 || self.players_points[sender as usize] < cost as usize {
-                    println!("player {} has {} points but piece {} costs {}", sender, self.players_points[sender as usize], piece, cost);
+                    println!(
+                        "player {} has {} points but piece {} costs {}",
+                        sender, self.players_points[sender as usize], piece, cost
+                    );
                     return reject();
                 }
 
@@ -607,7 +620,8 @@ impl Game {
                     //si on mange une piece, on ajoute les points du joueur
                     if eaten_piece > 0 {
                         self.players_points[player as usize] += 1;
-                        if self.pieces.get_piece_index(eaten_piece) == self.pieces.get_king_index() {
+                        if self.pieces.get_piece_index(eaten_piece) == self.pieces.get_king_index()
+                        {
                             self.king_eaten = self.pieces.get_team(eaten_piece);
                             //augmenter un peu elo joueur
                         }

@@ -1,4 +1,3 @@
-
 use console_engine::{Color, ConsoleEngine, KeyCode, pixel};
 use serde_json::Value;
 
@@ -46,13 +45,8 @@ impl Game {
             previous_cursor: (0, 0),
             awaiting_move: false,
             team_number: 4,
-            players_names: vec![
-                "Elie".to_string(),
-                "Serguei".to_string(),
-                "Paul".to_string(),
-                "Axel".to_string(),
-            ],
-            spectators_names: vec!["Jules".to_string(), "Louan".to_string()],
+            players_names: vec![],
+            spectators_names: vec![],
             selected_texture: 0,
         }
     }
@@ -468,7 +462,8 @@ impl Game {
 
     pub fn display(&mut self, e: &mut ConsoleEngine) {
         // Afficher le plateau
-        self.board.display(e, &self.pieces, &self.team_colors, self.selected_texture);
+        self.board
+            .display(e, &self.pieces, &self.team_colors, self.selected_texture);
 
         // message d'attente
         if self.is_playing != self.color {
@@ -556,7 +551,7 @@ impl Game {
 
             // marqueur visuel pour la pièce actuellement sélectionnée
             e.print(x, y - 1, if selected { ">" } else { " " });
-            
+
             // nom de la pièce et son prix -> grisé si pas assez de points
             let label = format!("{} {} pts", piece.get_label(self.selected_texture), cost);
             if can_buy {

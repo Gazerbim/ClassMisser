@@ -100,6 +100,7 @@ impl Lobby {
                         self.list_players.remove(self.number_of_players as usize);
                     } else {
                         self.player_states[i] = PlayerState::Disconnected;
+                        self.game.set_player_afk_state(i, true);
                     }
                 } else {
                     self.list_players.remove(i);
