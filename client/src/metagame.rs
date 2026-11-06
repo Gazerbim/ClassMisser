@@ -178,7 +178,9 @@ impl Metagame {
                         .to_string();
                 req.push_str(&nom_lobby);
                 req.push_str("\" }}$");
-                if self.client.send(&req) {}
+                if self.client.send(&req) {
+                    self.game.set_lobby_name(nom_lobby.clone());
+                }
             }
         } else if self.state == State::InGame {
             if self.engine.is_key_pressed(console_engine::KeyCode::Esc) {

@@ -6,6 +6,7 @@ use crate::services::board::Board;
 use crate::services::pieces::Pieces;
 use crate::types::protocol::Response;
 use crate::types::states::GameState;
+use crate::services::save_game::SaveGame;
 
 pub struct Game {
     color: i32,
@@ -26,6 +27,8 @@ pub struct Game {
     players_names: Vec<String>,
     spectators_names: Vec<String>,
     selected_texture: usize,
+    save: SaveGame,
+    lobby_name: String,
 }
 
 impl Game {
@@ -54,11 +57,17 @@ impl Game {
             ],
             spectators_names: vec!["Jules".to_string(), "Louan".to_string()],
             selected_texture: 0,
+            save: SaveGame::new(Pieces::new()),
+            lobby_name: "".to_string(),
         }
     }
 
     pub fn set_color(&mut self, new_color: i32) {
         self.color = new_color;
+    }
+
+    pub fn set_lobby_name(&mut self, name: String) {
+        self.lobby_name = name;
     }
 
     pub fn get_team_colors(&self) -> &[Color; 4] {
@@ -102,6 +111,7 @@ impl Game {
             }
         }
         self.pieces.load_pieces(team_number);
+        self.save = SaveGame::new(self.pieces.clone());
         self.board.init(board_size, team_number, xc, yc, all_pieces);
         self.color = color;
         self.is_playing = 0;
@@ -244,6 +254,16 @@ impl Game {
                                 None => {}
                             }
                         }
+                    }
+                }
+
+                //save the board state after each update
+                self.save.add_board_from_board(&self.board);
+                //Save the boards to a file (name: lobby_name + "_save.json")
+                if !self.lobby_name.is_empty() {
+                    let save_file_path = format!("saves/{}_save.json", self.lobby_name);
+                    if let Err(err) = self.save.save_boards_to_file(&save_file_path) {
+                        eprintln!("Error saving boards to file {}: {}", save_file_path, err);
                     }
                 }
             }
@@ -460,6 +480,7 @@ impl Game {
 
                 self.awaiting_move = true;
                 self.state = GameState::WaitEnd;
+                self.lobby_name = lobby_name;
             }
         }
     }
