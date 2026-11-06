@@ -46,9 +46,11 @@ impl Clients {
         c.connection_state
     }
 
-    pub fn get_username(&self, token: &Token) -> String {
-        let c = self.list.get(token).unwrap();
-        c.username.clone()
+    pub fn get_username(&self, token: &Token) -> Option<String> {
+        match self.list.get(token) {
+            Some(_c) => return Some(_c.username.clone()),
+            None => return None,
+        }
     }
 
     pub fn set_client_connection_state(&mut self, token: &Token, state: bool, username: String) {

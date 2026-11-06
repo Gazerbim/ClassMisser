@@ -3,6 +3,7 @@ use serde_json::Value;
 
 use crate::services::{chat::Chat, game::Game};
 
+#[derive(PartialEq)]
 pub enum PlayerState {
     Playing,
     Lost,
@@ -31,6 +32,9 @@ impl Lobby {
             .pieces
             .set_king_index(self.game.pieces.get_first_king_index());
         self.number_of_players = number_team;
+        for i in 0..number_team {
+            self.player_states.push(PlayerState::Playing);
+        }
         self.in_game = true;
         self.game.board.get_simplfied_board()
     }
@@ -89,7 +93,9 @@ impl Lobby {
         for i in 0..self.list_players.len() {
             if self.list_players[i] == *player_token {
                 if i < self.number_of_players as usize {
-                    if self.number_of_players < self.list_players.len() as i8 {
+                    if self.number_of_players < self.list_players.len() as i8
+                        || self.in_game == false
+                    {
                         self.list_players[i] = self.list_players[self.number_of_players as usize];
                         self.list_players.remove(self.number_of_players as usize);
                     } else {
@@ -104,6 +110,23 @@ impl Lobby {
                 break;
             }
         }
+    }
+
+    pub fn is_lobby_empty(&self) -> bool {
+        if self.list_players.len() > self.number_of_players as usize {
+            return false;
+        } else {
+            let mut n = 0;
+            for i in 0..self.player_states.len() {
+                if !(self.player_states[i] == PlayerState::Disconnected) {
+                    n += 1;
+                }
+            }
+            if n == 0 {
+                return true;
+            }
+        }
+        false
     }
 
     pub fn handle_request(

@@ -3,7 +3,12 @@ use std::{collections::HashMap, usize::MAX};
 use mio::Token;
 use serde_json::Value;
 
-use crate::services::{chat::Chat, clients::Clients, game::Game, lobby::Lobby};
+use crate::services::{
+    chat::Chat,
+    clients::Clients,
+    game::Game,
+    lobby::{Lobby, PlayerState},
+};
 
 pub struct Lobbies {
     pub list: HashMap<usize, Lobby>,
@@ -21,7 +26,7 @@ impl Lobbies {
     pub fn add_player(&mut self, token: Token, lobby: usize) -> bool {
         match self.list.get_mut(&lobby) {
             Some(_l) => {
-                _l.list_players.push(token);
+                _l.add_player(token);
                 true
             }
             None => false,
@@ -80,19 +85,25 @@ impl Lobbies {
         for k in affected_lobbies {
             let lobby = self.list.get_mut(&k).unwrap();
             lobby.remove_player(player_token);
-            if lobby.get_number_players_in_lobby() == 0 {
+            if lobby.is_lobby_empty() {
                 empty_lobbies.push(lobby.name.clone());
             } else {
                 let mut new_players: Vec<String> = Vec::new();
                 let mut spectators: Vec<String> = Vec::new();
                 for t in lobby.get_players() {
-                    let username = clients.get_username(&t);
+                    let username = match clients.get_username(&t) {
+                        Some(_u) => _u,
+                        None => "disconnected".to_string(),
+                    };
                     if username != "".to_string() {
                         new_players.push(username.clone());
                     }
                 }
                 for t in lobby.get_spectators() {
-                    let username = clients.get_username(&t);
+                    let username = match clients.get_username(&t) {
+                        Some(_u) => _u,
+                        None => "disconnected".to_string(),
+                    };
                     if username != "".to_string() {
                         spectators.push(username.clone());
                     }
@@ -253,18 +264,24 @@ impl Lobbies {
                         let mut players: Vec<String> = Vec::new();
                         let mut spectators: Vec<String> = Vec::new();
                         for t in l.get_players() {
-                            let username = clients.get_username(&t);
+                            let username = match clients.get_username(&t) {
+                                Some(_u) => _u,
+                                None => "disconnected".to_string(),
+                            };
                             players.push(username);
                         }
                         for t in l.get_spectators() {
-                            let username = clients.get_username(&t);
+                            let username = match clients.get_username(&t) {
+                                Some(_u) => _u,
+                                None => "disconnected".to_string(),
+                            };
                             spectators.push(username);
                         }
                         data_value = serde_json::json!({ "new_players": players, "new_spectators": spectators});
                         response_header = "update_players";
                         type_response = "game";
                         //à revoir ! c'est toujours faux!!!!
-                        if l.list_players.len() == 0 {
+                        if l.is_lobby_empty() {
                             lobby_name_to_delete = l.name.clone();
                         }
                         break;

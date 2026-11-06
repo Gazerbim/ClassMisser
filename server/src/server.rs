@@ -113,11 +113,11 @@ impl Server {
 
     fn disconnect_client(&mut self, token: Token) {
         if let Some(mut client) = self.clients.list.remove(&token) {
-            let _ = self.poll.registry().deregister(&mut client.socket);
             let messages = self.lobbies.player_disconnection(&token, &self.clients);
             for (lobby_id, message) in messages {
                 self.broadcast_to_lobby(lobby_id, &message).unwrap();
             }
+            let _ = self.poll.registry().deregister(&mut client.socket);
             println!("Client {:?} déconnecté", token);
         }
     }
@@ -609,7 +609,10 @@ impl Server {
             let mut players_usernames: Vec<String> = Vec::new();
             let mut spectators: Vec<String> = Vec::new();
             for i in 0..players.len() {
-                let username = self.clients.get_username(&players[i]);
+                let username = match self.clients.get_username(&players[i]) {
+                    Some(_u) => _u,
+                    None => "disconnected".to_string(),
+                };
                 if username != "".to_string() {
                     if i < n as usize {
                         players_usernames.push(username.clone());
