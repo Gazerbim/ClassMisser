@@ -1,3 +1,4 @@
+use clap::builder::Str;
 use console_engine::{Color, ConsoleEngine, KeyCode, pixel};
 use serde_json::Value;
 
@@ -116,6 +117,14 @@ impl Game {
         } else {
             GameState::WaitInit
         };
+    }
+
+    pub fn set_players_names(&mut self, usernames: Vec<String>) {
+        self.players_names = usernames;
+    }
+
+    pub fn set_spectators_names(&mut self, usernames: Vec<String>) {
+        self.spectators_names = usernames;
     }
 
     pub fn handle_server(&mut self, response: Response) {

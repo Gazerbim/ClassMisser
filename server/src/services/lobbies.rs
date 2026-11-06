@@ -1,7 +1,7 @@
 use std::{collections::HashMap, usize::MAX};
 
 use mio::Token;
-use serde_json::Value;
+use serde_json::{Number, Value};
 
 use crate::services::{
     chat::Chat,
@@ -161,7 +161,6 @@ impl Lobbies {
         sender: Token,
         header: &str,
         data: &Value,
-        receiver: &mut Token,
         clients: &Clients,
     ) -> (String, String) {
         let mut broadcast = "".to_string();
@@ -229,6 +228,9 @@ impl Lobbies {
             }
             "enter_lobby" => {
                 let mut added = String::from("");
+                let mut lobby_info = serde_json::json!({
+                    "in_game": false,
+                });
                 for l in self.list.values_mut() {
                     if l.name
                         == data["name"].to_string().clone()[1..(data["name"].to_string().len() - 1)]
@@ -242,15 +244,19 @@ impl Lobbies {
                             }
                         }
                         if !already_in {
-                            //l.list_players.push(sender);
-                            l.add_player(sender);
+                            let player_color = l.add_player(sender);
                             let name = data["name"].to_string();
-                            added = name.clone()[1..(name.len() - 1)].to_string()
+                            added = name.clone()[1..(name.len() - 1)].to_string();
+                            if l.lobby_is_in_game() {
+                                lobby_info = l.get_lobby_info(clients);
+                                lobby_info["color"] =
+                                    Value::Number(Number::from_f64(player_color as f64).unwrap());
+                            }
                         }
                     }
                 }
                 response_header = "enter_lobby";
-                serde_json::json!({"name": added})
+                serde_json::json!({"name": added, "lobby_info": lobby_info })
             }
             "quit_lobby" => {
                 let mut data_value: Value = serde_json::json!({});
@@ -280,7 +286,6 @@ impl Lobbies {
                         data_value = serde_json::json!({ "new_players": players, "new_spectators": spectators});
                         response_header = "update_players";
                         type_response = "game";
-                        //à revoir ! c'est toujours faux!!!!
                         if l.is_lobby_empty() {
                             lobby_name_to_delete = l.name.clone();
                         }
@@ -288,6 +293,37 @@ impl Lobbies {
                     }
                 }
                 self.delete_lobby_by_name(lobby_name_to_delete);
+                data_value
+            }
+            "hello_lobby" => {
+                let mut data_value: Value = serde_json::json!({});
+                let name = data["name"].to_string();
+                let name = name.clone()[1..name.len() - 1].to_string();
+                for l in self.list.values_mut() {
+                    if l.name == name {
+                        broadcast = l.name.clone();
+                        let mut players: Vec<String> = Vec::new();
+                        let mut spectators: Vec<String> = Vec::new();
+                        for t in l.get_players() {
+                            let username = match clients.get_username(&t) {
+                                Some(_u) => _u,
+                                None => "disconnected".to_string(),
+                            };
+                            players.push(username);
+                        }
+                        for t in l.get_spectators() {
+                            let username = match clients.get_username(&t) {
+                                Some(_u) => _u,
+                                None => "disconnected".to_string(),
+                            };
+                            spectators.push(username);
+                        }
+                        data_value = serde_json::json!({ "new_players": players, "new_spectators": spectators});
+                        response_header = "update_players";
+                        type_response = "game";
+                        break;
+                    }
+                }
                 data_value
             }
             _ => serde_json::json!({}),

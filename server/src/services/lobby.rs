@@ -1,7 +1,7 @@
 use mio::Token;
 use serde_json::Value;
 
-use crate::services::{chat::Chat, game::Game};
+use crate::services::{chat::Chat, clients::Clients, game::Game};
 
 #[derive(PartialEq)]
 pub enum PlayerState {
@@ -81,12 +81,33 @@ impl Lobby {
         false
     }
 
-    pub fn add_player(&mut self, player_token: Token) {
+    pub fn add_player(&mut self, player_token: Token) -> usize {
         //modifier pour quand un joueur se reconnecte
-        self.list_players.push(player_token);
         if self.list_players.len() <= self.number_of_players as usize {
+            //pas encore ou plus assez de joueurs
+            for i in 0..self.player_states.len() {
+                if self.player_states[i] == PlayerState::Disconnected {
+                    //un joueur s'est déconnecté, le nouveau joueur va le remplacer
+                    if self.list_players.len() <= i {
+                        self.list_players.push(player_token);
+                    } else {
+                        self.list_players[i] = player_token;
+                    }
+                    self.player_states[i] = PlayerState::Playing;
+                    return i; //on a ajouté le joueur
+                }
+            }
+            self.list_players.push(player_token);
             self.player_states.push(PlayerState::Playing);
+            return self.list_players.len() - 1;
+        } else {
+            self.list_players.push(player_token);
+            return 5;
         }
+    }
+
+    pub fn lobby_is_in_game(&self) -> bool {
+        self.in_game
     }
 
     pub fn remove_player(&mut self, player_token: &Token) {
@@ -99,7 +120,9 @@ impl Lobby {
                         self.list_players[i] = self.list_players[self.number_of_players as usize];
                         self.list_players.remove(self.number_of_players as usize);
                     } else {
-                        self.player_states[i] = PlayerState::Disconnected;
+                        if self.player_states[i] != PlayerState::Lost {
+                            self.player_states[i] = PlayerState::Disconnected;
+                        }
                         self.game.set_player_afk_state(i, true);
                     }
                 } else {
@@ -128,6 +151,32 @@ impl Lobby {
             }
         }
         false
+    }
+
+    pub fn get_lobby_info(&self, clients: &Clients) -> Value {
+        let simplified_board = self.game.get_simplified_board();
+        let size = self.game.get_board_size();
+        let players = self.number_of_players;
+        let mut player_usernames: Vec<String> = Vec::new();
+        for t in self.get_players() {
+            let username = clients.get_username(&t).unwrap();
+            player_usernames.push(username);
+        }
+        let mut spectator_usernames: Vec<String> = Vec::new();
+        for t in self.get_spectators() {
+            let username = clients.get_username(&t).unwrap();
+            spectator_usernames.push(username);
+        }
+        serde_json::json!({
+            "in_game": true,
+            "board_size": size,
+            "number_player": players,
+            "players": player_usernames,
+            "spectators": spectator_usernames,
+            "x": simplified_board.0,
+            "y": simplified_board.1,
+            "pieces": simplified_board.2,
+        })
     }
 
     pub fn handle_request(

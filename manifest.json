@@ -56,7 +56,7 @@
 	"response": {
 	  "type": "lobbies",
 		"header": "enter_lobby",
-		"data": "{name: String}"
+		"data": "{ name: String, lobby_info: { in_game: bool, color: usize, number_player: i8, size: usize, x: [usize], y: [usize], pieces: [i8], players: [String], spectators: [String] } }"
 	}
 },
 {
@@ -95,6 +95,18 @@
 			"data": "{name: String}"
 		}
 	},
+	{
+	"request": {
+		"type": "lobbies",
+		"header": "hello_lobby",
+		"data": "{ name: String }"
+	},
+		"response": {
+		  "type": "game",
+			"header": "update_players",
+			"data": "{ new_players: [String], new_spectators: [String]}"
+		}
+	},
 {
 		"request": {
 			"type": "game",
@@ -104,7 +116,7 @@
 		"response": {
 		  "type": "game",
 			"header": "game_is_starting",
-			"data": "{ color: usize, players: i8, size: usize, x: [usize], y: [usize], pieces: [i8] }"
+			"data": "{ color: usize, number_player: i8, board_size: usize, x: [usize], y: [usize], pieces: [i8], players: [String], spectators: [String] }"
 		}
 	},
 {
@@ -177,13 +189,6 @@
 		  "type": "lobby",
 			"header": "game_quitted",
 			"data": "{}"
-		}
-	},
-	{
-		"response": {
-		  "type": "game",
-			"header": "update_players",
-			"data": "{ new_players: [String], new_spectators: [String]}"
 		}
 	},
   {

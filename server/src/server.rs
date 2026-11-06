@@ -363,12 +363,10 @@ impl Server {
         if self.clients.get_connection_value(&sender) {
             match (request.request_type.as_str(), request.header.as_str()) {
                 ("lobbies", _) => {
-                    let mut receiver = sender.clone();
                     let (lobby, response) = self.lobbies.handle_request(
                         sender,
                         request.header.as_str(),
                         &request.data,
-                        &mut receiver,
                         &self.clients,
                     );
                     if response != String::from("") {
@@ -380,7 +378,7 @@ impl Server {
                                 None => {}
                             };
                         } else {
-                            self.send_to_client(receiver, &response)?;
+                            self.send_to_client(sender, &response)?;
                         }
                     }
                 }

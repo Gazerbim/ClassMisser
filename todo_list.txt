@@ -1,5 +1,5 @@
 En vrac:
--> éliminer un joueur (refaire gestion joueur côté serveur)
+-> rejoindre un lobby déjà en game
 -> améliorer chat
 -> sycrhronisation version client/serveur
 -> elo

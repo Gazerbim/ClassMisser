@@ -1,3 +1,5 @@
+use std::str::FromStr;
+
 use console_engine::ConsoleEngine;
 use serde_json::Value;
 
@@ -349,15 +351,46 @@ impl Metagame {
             },
             "enter_lobby" => match response.data["name"].as_str() {
                 Some(_n) => {
-                    self.state = State::InLobby;
                     self.in_lobby.set_creator(false);
                     self.in_lobby.set_name(String::from(_n));
+                    match response.data["lobby_info"]["in_game"].as_bool() {
+                        Some(true) => {
+                            let false_response = Response {
+                                request_type: "game".to_string(),
+                                header: "game_is_starting".to_string(),
+                                data: Value::from_str(&response.data["lobby_info"].to_string())
+                                    .unwrap(),
+                            };
+                            self.read_game_server_response(false_response);
+                            let req = serde_json::json!({
+                                "type": "lobbies",
+                                "header": "hello_lobby",
+                                "data": serde_json::json!({
+                                    "name": &self.in_lobby.get_name()
+                                })
+                            })
+                            .to_string()
+                                + "$";
+                            self.client.send(&req);
+                        }
+                        Some(false) => {
+                            self.state = State::InLobby;
+                        }
+                        None => {
+                            self.state = State::InLobby;
+                        }
+                    }
                 }
                 None => { //set le nom du lobby en rouge pour signifier une erreur
                 }
             },
             "created_lobby" => match response.data["name"].as_str() {
                 Some(_n) => {
+                    match response.data["in_game"].as_bool() {
+                        Some(true) => {}
+                        Some(false) => {}
+                        None => {}
+                    };
                     self.in_lobby.set_name(String::from(_n));
                     self.in_lobby.set_creator(true);
                     self.state = State::InLobby;
