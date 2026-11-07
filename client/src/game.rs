@@ -243,22 +243,36 @@ impl Game {
                             self.choosing_spawn = false;
                             self.spawn_positions.clear();
                             self.state = GameState::WaitEnd;
-                        } else if self.awaiting_move {
-                            // choisir la piece a faire spawner
-                            self.awaiting_move = false;
-                            self.selected_piece = 0;
-                            self.state = GameState::WaitChoosePiece;
-                        } else if self.state != GameState::WaitChoosePiece && !self.choosing_spawn {
-                            self.state = GameState::WaitPlay;
-                            match response.data["special_action"].as_str() {
+                        } else {
+                            let found = match response.data["special_action"].as_str() {
                                 Some("buy_piece") => {
                                     // force à choisir la piece a faire spawner
                                     self.awaiting_move = false;
                                     self.selected_piece = 0;
                                     self.state = GameState::WaitChoosePiece;
+                                    true
                                 }
-                                Some(_) => {}
-                                None => {}
+                                Some("skip_spawn") => {
+                                    self.awaiting_move = false;
+                                    self.choosing_spawn = false;
+                                    self.spawn_positions.clear();
+                                    self.state = GameState::WaitPlay;
+                                    true
+                                }
+                                Some(_) => false,
+                                None => false,
+                            };
+                            if !found {
+                                if self.awaiting_move {
+                                    // choisir la piece a faire spawner
+                                    self.awaiting_move = false;
+                                    self.selected_piece = 0;
+                                    self.state = GameState::WaitChoosePiece;
+                                } else if self.state != GameState::WaitChoosePiece
+                                    && !self.choosing_spawn
+                                {
+                                    self.state = GameState::WaitPlay;
+                                }
                             }
                         }
                     }

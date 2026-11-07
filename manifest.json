@@ -140,7 +140,7 @@
 		"response": {
 		  "type": "game",
 			"header": "update_board",
-			"data": "{ x: [usize], y: [usize], pieces: [i8] }"
+			"data": "{ x: [usize], y: [usize], pieces: [i8] player_playing: i8, players_points: [i8], special_action: String }"
 		}
 	},
 {

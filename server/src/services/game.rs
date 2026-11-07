@@ -186,11 +186,13 @@ impl Game {
                 self.has_moved = true;
 
                 // le joueur doit faire apparaitre une piece sauf s'il a pas assez de thunasse
+                let mut special = "normal";
                 if !self
                     .pieces
                     .can_afford_any(self.players_points[sender as usize])
                 {
                     self.end_turn();
+                    special = "skip_spawn"
                 }
 
                 let message = serde_json::json!({
@@ -202,7 +204,7 @@ impl Game {
                         "pieces": p,
                         "player_playing": self.player_playing,
                         "players_points": self.players_points,
-                        "players_special_state": "normal", //pour quand le joueur n'a plus de pièces à bouger
+                        "special_action": special, //pour quand le joueur n'a plus de pièces à bouger
                     }
                 })
                 .to_string()
@@ -331,7 +333,8 @@ impl Game {
                 if self
                     .board
                     .get_number_alive_pieces_of_player(&self.pieces, self.player_playing)
-                    == 0
+                    <= 1
+                //le roi est une pièce
                 {
                     println!("effectivement plus de pièces");
                     self.has_moved = true;
@@ -376,7 +379,8 @@ impl Game {
                 if self
                     .board
                     .get_number_alive_pieces_of_player(&self.pieces, self.player_playing)
-                    == 0
+                    <= 1
+                //le roi est une pièce
                 {
                     println!("effectivement plus de pièces");
                     self.has_moved = true;

@@ -16,7 +16,7 @@ pub enum Focus {
     Chat,
 }
 
-#[derive(PartialEq)]
+#[derive(PartialEq, Debug)]
 pub enum GameState {
     WaitInit,
     WaitPlay,

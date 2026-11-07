@@ -2,6 +2,7 @@ En vrac:
 -> rejoindre un lobby déjà en game
 -> finir une partie
 -> elo
+-> supprimer bouton paramètres
 -> améliorer chat
 -> sycrhronisation version client/serveur
 -> retirer un max de 'unwrap' du serveur
