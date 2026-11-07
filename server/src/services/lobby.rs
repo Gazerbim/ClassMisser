@@ -8,8 +8,9 @@ use crate::services::{chat::Chat, clients::Clients, game::Game};
 #[derive(PartialEq)]
 pub enum PlayerState {
     Playing,
-    Lost,
+    Lost, //not playing but still in lobby
     Disconnected,
+    RageQuit, //lost and quitted
 }
 
 pub struct Lobby {
@@ -101,7 +102,9 @@ impl Lobby {
                     self.player_states[i] = PlayerState::Playing;
                     self.game.set_player_afk_state(i, false);
                     return i; //on a ajouté le joueur
-                } else if self.player_states[i] == PlayerState::Lost {
+                } else if self.player_states[i] == PlayerState::Lost
+                    || self.player_states[i] == PlayerState::RageQuit
+                {
                     losts += 1;
                 }
             }
@@ -142,6 +145,8 @@ impl Lobby {
                     } else {
                         if self.player_states[i] != PlayerState::Lost {
                             self.player_states[i] = PlayerState::Disconnected;
+                        } else {
+                            self.player_states[i] = PlayerState::RageQuit;
                         }
                         self.game.set_player_afk_state(i, true);
                         if self.game.get_player_playing() == i as i8
@@ -164,20 +169,28 @@ impl Lobby {
     }
 
     pub fn is_lobby_empty(&self) -> bool {
-        if self.list_players.len() > self.number_of_players as usize {
-            return false;
-        } else {
-            let mut n = 0;
-            for i in 0..self.player_states.len() {
-                if !(self.player_states[i] == PlayerState::Disconnected) {
-                    n += 1;
-                }
-            }
-            if n == 0 {
-                return true;
+        // if self.list_players.len() > self.number_of_players as usize {
+        //     return false;
+        // } else {
+        //     let mut n = 0;
+        //     for i in 0..self.player_states.len() {
+        //         if !(self.player_states[i] == PlayerState::Disconnected) {
+        //             n += 1;
+        //         }
+        //     }
+        //     if n == 0 {
+        //         return true;
+        //     }
+        // }
+        // false
+        for i in 0..self.player_states.len() {
+            if self.player_states[i] == PlayerState::Playing
+                || self.player_states[i] == PlayerState::Lost
+            {
+                return false;
             }
         }
-        false
+        true
     }
 
     pub fn get_lobby_info(&self, clients: &Clients) -> Value {

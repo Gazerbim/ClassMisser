@@ -17,6 +17,11 @@ impl InLobby {
         }
     }
 
+    pub fn reset(&mut self) {
+        self.name = "".to_string();
+        self.creator = false;
+    }
+
     pub fn set_name(&mut self, new_name: String) {
         self.name = new_name.clone();
     }

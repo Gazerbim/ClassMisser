@@ -191,6 +191,7 @@ impl Metagame {
                 req.push_str("\"}}$");
                 if self.client.send(&req) {
                     self.state = State::Home;
+                    self.in_lobby.reset();
                 }
             } else if self.engine.is_key_pressed(console_engine::KeyCode::Tab) {
                 if self.focus == Focus::Game {

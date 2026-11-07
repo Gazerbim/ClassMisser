@@ -102,7 +102,9 @@ impl Game {
                 }
             }
         }
+        self.pieces = Pieces::new();
         self.pieces.load_pieces(team_number);
+        self.board = Board::new();
         self.board.init(board_size, team_number, xc, yc, all_pieces);
         self.color = color;
         self.is_playing = 0;

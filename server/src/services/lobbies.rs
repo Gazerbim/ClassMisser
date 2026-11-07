@@ -150,6 +150,7 @@ impl Lobbies {
     }
 
     pub fn delete_lobby_by_name(&mut self, name: String) {
+        println!("removing lobby {}", &name);
         let to_remove: Vec<usize> = self
             .list
             .keys()
