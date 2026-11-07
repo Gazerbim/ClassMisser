@@ -100,4 +100,25 @@ impl AccountManager {
         }
         -1
     }
+
+    pub fn get_user_points(&self, username: &String) -> usize {
+        let polar = CsvReadOptions::default()
+            .with_has_header(true)
+            .try_into_reader_with_file_path(Some("src/data/accounts.csv".into()))
+            .unwrap()
+            .finish()
+            .unwrap();
+        let users = polar.column("username").unwrap();
+        let index = self.get_user_index(users, &username);
+        if index >= 0 {
+            let points = polar.column("points").unwrap().get(index as usize).unwrap();
+            if points.is_integer() {
+                let points = points.try_extract::<i32>().unwrap();
+                if points >= 0 {
+                    return points as usize;
+                }
+            }
+        }
+        0
+    }
 }

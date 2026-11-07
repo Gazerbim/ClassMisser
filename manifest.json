@@ -23,6 +23,18 @@
 		"data": "{accept: bool}"
 	}
 },
+{
+	"request": {
+		"type": "server",
+		"header": "get_points",
+		"data": "{}"
+	},
+	"response": {
+	  "type": "server",
+		"header": "points",
+		"data": "{ points: usize }"
+	}
+},
 	{
 		"request": {
 			"type": "lobbies",

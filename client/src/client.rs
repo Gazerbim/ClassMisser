@@ -81,7 +81,9 @@ impl Client {
                     return None;
                 }
 
-                Err(_) => return None,
+                Err(_) => {
+                    return None;
+                }
             }
         }
     }

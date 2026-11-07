@@ -1,4 +1,5 @@
 use std::str::FromStr;
+use std::usize::MAX;
 
 use console_engine::ConsoleEngine;
 use serde_json::Value;
@@ -33,6 +34,7 @@ pub struct Metagame {
 
     username: String,
     password: String,
+    points: usize,
 }
 
 impl Metagame {
@@ -65,6 +67,7 @@ impl Metagame {
             in_lobby: InLobby::new("".to_string()),
             username: String::from(""),
             password: String::from(""),
+            points: 0,
         }
     }
 
@@ -97,7 +100,7 @@ impl Metagame {
                     }
                     None => {
                         counter += 1;
-                        if counter == 50 {
+                        if counter == 1000 {
                             println!("En attente d'une réponse du serveur...");
                             counter = 0;
                         }
@@ -109,6 +112,15 @@ impl Metagame {
     }
 
     pub fn main_loop(&mut self) {
+        if self.points == 0 {
+            let req = serde_json::json!({
+                "type": "server",
+                "header": "get_points"
+            })
+            .to_string()
+                + "$";
+            self.client.send(&req);
+        }
         loop {
             self.engine.wait_frame(); // wait for next frame + capture inputs
 
@@ -276,6 +288,9 @@ impl Metagame {
                 .display(&mut self.engine, (left_third, top_left + 10));
             self.home_layout
                 .display(&mut self.engine, (left_third - 3, top_left * 4 / 15));
+            let mut elo_msg = "Elo: ".to_string();
+            elo_msg.push_str(&self.points.to_string());
+            self.engine.print(left_third + 5, top_left + 7, &elo_msg);
         } else if self.state == State::EnterPseudo {
             self.enter_username
                 .display(&mut self.engine, (left_third, top_left));
@@ -302,6 +317,7 @@ impl Metagame {
                 if raw_response != String::from("") {
                     let response: Response = self.client.parse_response(&raw_response);
                     match response.request_type.as_str() {
+                        "server" => self.read_server_response(response),
                         "username" => self.read_username_server_response(response),
                         "lobbies" => self.read_lobby_server_response(response),
                         "game" => self.read_game_server_response(response),
@@ -311,6 +327,24 @@ impl Metagame {
                 }
             }
             None => {}
+        }
+    }
+
+    fn read_server_response(&mut self, response: Response) {
+        match response.header.as_str() {
+            "points" => {
+                self.points = match response.data["points"].as_i64() {
+                    Some(_p) => {
+                        if _p >= 0 {
+                            _p as usize
+                        } else {
+                            0
+                        }
+                    }
+                    None => 0,
+                }
+            }
+            _ => {}
         }
     }
 

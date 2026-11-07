@@ -362,6 +362,25 @@ impl Server {
 
         if self.clients.get_connection_value(&sender) {
             match (request.request_type.as_str(), request.header.as_str()) {
+                ("server", _header) => match _header {
+                    "get_points" => match self.clients.get_username(&sender) {
+                        None => {}
+                        Some(_u) => {
+                            let points = self.account_manager.get_user_points(&_u);
+                            let response = serde_json::json!({
+                                "type": "server",
+                                "header": "points",
+                                "data": &serde_json::json!({
+                                    "points": points,
+                                })
+                            })
+                            .to_string()
+                                + "$";
+                            self.send_to_client(sender, &response)?;
+                        }
+                    },
+                    _ => {}
+                },
                 ("lobbies", _) => {
                     let (lobby, response) = self.lobbies.handle_request(
                         sender,
@@ -447,14 +466,6 @@ impl Server {
                         "Requête inconnue : {} / {}",
                         request.request_type, request.header
                     );
-
-                    // self.send_to_client(
-                    //     sender,
-                    //     &Self::make_response(
-                    //         "error",
-                    //         serde_json::json!({"message": "Unknown request"}),
-                    //     ),
-                    // )?;
                 }
             }
         } else {
@@ -516,7 +527,7 @@ impl Server {
                     "username",
                     "connection",
                     serde_json::json!({
-                        "accept": accepted
+                        "accept": accepted,
                     }),
                 ),
             );
