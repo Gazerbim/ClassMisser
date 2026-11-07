@@ -151,7 +151,6 @@ impl Metagame {
         } else if self.state == State::CreateLobby {
             self.lobby_creator.handling_events(&self.engine);
             if self.engine.is_key_pressed(console_engine::KeyCode::Esc) {
-                //envoyer une requête pour quitter le lobby
                 self.state = State::Home;
             }
         } else if self.state == State::InLobby {
@@ -387,11 +386,6 @@ impl Metagame {
             },
             "created_lobby" => match response.data["name"].as_str() {
                 Some(_n) => {
-                    match response.data["in_game"].as_bool() {
-                        Some(true) => {}
-                        Some(false) => {}
-                        None => {}
-                    };
                     self.in_lobby.set_name(String::from(_n));
                     self.in_lobby.set_creator(true);
                     self.state = State::InLobby;

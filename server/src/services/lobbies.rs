@@ -191,7 +191,10 @@ impl Lobbies {
             "create_lobby" => {
                 //check if the name is already taken
                 if self
-                    .get_lobby_id_by_name(&data["name"].to_string())
+                    .get_lobby_id_by_name(
+                        &data["name"].to_string().clone()[1..data["name"].to_string().len() - 1]
+                            .to_string(),
+                    )
                     .is_some()
                 {
                     response_header = "error";
