@@ -1,7 +1,5 @@
 En vrac:
--> empêcher deux lobby du même nom en même temps
 -> elo
--> supprimer bouton paramètres
 -> améliorer chat
 -> sycrhronisation version client/serveur
 -> retirer un max de 'unwrap' du serveur

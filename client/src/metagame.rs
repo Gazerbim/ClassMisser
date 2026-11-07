@@ -55,7 +55,6 @@ impl Metagame {
             home: SelectLobby::new(vec![
                 String::from("Créer un salon"),
                 String::from("Rejoindre un salon"),
-                String::from("Paramètres"),
                 String::from("Quitter"),
             ]),
             home_layout: Home::new(),
@@ -136,8 +135,6 @@ impl Metagame {
                 }
             } else if action == "Créer un salon".to_string() {
                 self.state = State::CreateLobby;
-            } else if action == "Paramètres".to_string() {
-                self.state = State::ModifyParameters;
             }
 
             if self.engine.is_key_pressed(console_engine::KeyCode::Esc) {
