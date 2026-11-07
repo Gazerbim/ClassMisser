@@ -88,9 +88,12 @@ impl Game {
     /// passe la main au joueur suivant.
     pub fn end_turn(&mut self) {
         println!("end turn");
+        let mut non_blocking = 0;
         self.player_playing = (self.player_playing + 1) % self.team_number;
-        while self.afk_players[self.player_playing as usize] {
+        while self.afk_players[self.player_playing as usize] && non_blocking < self.team_number * 2
+        {
             self.player_playing = (self.player_playing + 1) % self.team_number;
+            non_blocking += 1;
         }
         self.has_moved = false;
     }

@@ -1,5 +1,4 @@
 use std::str::FromStr;
-use std::usize::MAX;
 
 use console_engine::ConsoleEngine;
 use serde_json::Value;
@@ -38,7 +37,7 @@ pub struct Metagame {
 }
 
 impl Metagame {
-    pub fn getClient(&mut self) -> &mut Client {
+    pub fn get_client(&mut self) -> &mut Client {
         &mut self.client
     }
 

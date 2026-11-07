@@ -1,5 +1,4 @@
 En vrac:
--> elo
 -> améliorer chat
 -> sycrhronisation version client/serveur
 -> retirer un max de 'unwrap' du serveur

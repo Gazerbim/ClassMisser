@@ -25,17 +25,16 @@ struct Cli {
     action: Option<String>,
 }
 
-
 fn synchronise_pieces(game: &mut Metagame) {
     let request = String::from("{ \"type\": \"send_pieces\", \"header\": \"send_pieces\" }$");
-    if !game.getClient().send(&request) {
+    if !game.get_client().send(&request) {
         eprintln!("Impossible d'envoyer la demande de pièces au serveur");
         return;
     }
- 
+
     let start = std::time::Instant::now();
     let message = loop {
-        if let Some(m) = game.getClient().receive_message() {
+        if let Some(m) = game.get_client().receive_message() {
             break m;
         }
         if start.elapsed() > std::time::Duration::from_secs(5) {
@@ -44,7 +43,7 @@ fn synchronise_pieces(game: &mut Metagame) {
         }
         std::thread::sleep(std::time::Duration::from_millis(10));
     };
- 
+
     let response: serde_json::Value = match serde_json::from_str(&message) {
         Ok(v) => v,
         Err(e) => {
@@ -82,7 +81,6 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     };
     println!("tried to connect");
     if connected {
-
         synchronise_pieces(&mut game);
 
         game.main_loop();

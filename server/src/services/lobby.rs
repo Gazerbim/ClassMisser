@@ -144,7 +144,9 @@ impl Lobby {
                         self.game.set_player_afk_state(i, true);
                         if self.game.get_player_playing() == i as i8
                             && self.game.get_player_won() == -1
+                            && !self.is_lobby_empty()
                         {
+                            //si le joueur qui s'est deconnecté était en train de jouer, il faut passer son tour
                             self.game.end_turn();
                         }
                     }
