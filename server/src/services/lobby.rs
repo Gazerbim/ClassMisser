@@ -1,3 +1,5 @@
+use std::usize::MAX;
+
 use mio::Token;
 use serde_json::Value;
 
@@ -84,6 +86,9 @@ impl Lobby {
     pub fn add_player(&mut self, player_token: Token) -> usize {
         //modifier pour quand un joueur se reconnecte
         if self.list_players.len() <= self.number_of_players as usize {
+            //pas assez de joueur se sont connectés
+            // ou des joueurs se sont deconnectés
+            let mut losts = 0;
             //pas encore ou plus assez de joueurs
             for i in 0..self.player_states.len() {
                 if self.player_states[i] == PlayerState::Disconnected {
@@ -94,8 +99,15 @@ impl Lobby {
                         self.list_players[i] = player_token;
                     }
                     self.player_states[i] = PlayerState::Playing;
+                    self.game.set_player_afk_state(i, false);
                     return i; //on a ajouté le joueur
+                } else if self.player_states[i] == PlayerState::Lost {
+                    losts += 1;
                 }
+            }
+            if self.list_players.len() + losts == self.number_of_players as usize {
+                self.list_players.push(player_token);
+                return 5;
             }
             self.list_players.push(player_token);
             self.player_states.push(PlayerState::Playing);
@@ -110,7 +122,8 @@ impl Lobby {
         self.in_game
     }
 
-    pub fn remove_player(&mut self, player_token: &Token) {
+    pub fn remove_player(&mut self, player_token: &Token) -> usize {
+        let mut index_removed = MAX;
         for i in 0..self.list_players.len() {
             if self.list_players[i] == *player_token {
                 if i < self.number_of_players as usize {
@@ -124,6 +137,9 @@ impl Lobby {
                             self.player_states[i] = PlayerState::Disconnected;
                         }
                         self.game.set_player_afk_state(i, true);
+                        if self.game.get_player_playing() == i as i8 {
+                            self.game.end_turn();
+                        }
                     }
                 } else {
                     self.list_players.remove(i);
@@ -131,9 +147,11 @@ impl Lobby {
                 if self.owner == *player_token && self.list_players.len() != 0 {
                     self.owner = self.list_players[0];
                 }
+                index_removed = i;
                 break;
             }
         }
+        index_removed
     }
 
     pub fn is_lobby_empty(&self) -> bool {

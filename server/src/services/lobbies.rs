@@ -84,6 +84,7 @@ impl Lobbies {
         let mut return_messages: Vec<(usize, String)> = Vec::new();
         for k in affected_lobbies {
             let lobby = self.list.get_mut(&k).unwrap();
+            let old_player_playing = lobby.game.get_player_playing();
             lobby.remove_player(player_token);
             if lobby.is_lobby_empty() {
                 empty_lobbies.push(lobby.name.clone());
@@ -108,12 +109,17 @@ impl Lobbies {
                         spectators.push(username.clone());
                     }
                 }
+                let mut player_playing: i8 = -1;
+                if old_player_playing == lobby.game.get_player_playing() {
+                    player_playing = lobby.game.get_player_playing();
+                }
                 let message = serde_json::json!({
                     "type": "game",
                     "header": "update_players",
                     "data": {
                         "new_players": new_players,
-                        "new_spectators": spectators
+                        "new_spectators": spectators,
+                        "player_playing": player_playing,
                     }
                 })
                 .to_string()
@@ -265,6 +271,7 @@ impl Lobbies {
                     let name = data["name"].to_string();
                     let name = name.clone()[1..name.len() - 1].to_string();
                     if l.name == name {
+                        let old_player_playing = l.game.get_player_playing();
                         l.remove_player(&sender);
                         broadcast = l.name.clone();
                         let mut players: Vec<String> = Vec::new();
@@ -283,7 +290,11 @@ impl Lobbies {
                             };
                             spectators.push(username);
                         }
-                        data_value = serde_json::json!({ "new_players": players, "new_spectators": spectators});
+                        let mut player_playing: i8 = -1;
+                        if old_player_playing != l.game.get_player_playing() {
+                            player_playing = l.game.get_player_playing();
+                        }
+                        data_value = serde_json::json!({ "new_players": players, "new_spectators": spectators, "player_playing": player_playing});
                         response_header = "update_players";
                         type_response = "game";
                         if l.is_lobby_empty() {

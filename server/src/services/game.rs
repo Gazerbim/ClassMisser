@@ -62,8 +62,12 @@ impl Game {
         self.board.get_board_size()
     }
 
+    pub fn get_player_playing(&self) -> i8 {
+        self.player_playing
+    }
+
     /// passe la main au joueur suivant.
-    fn end_turn(&mut self) {
+    pub fn end_turn(&mut self) {
         println!("end turn");
         self.player_playing = (self.player_playing + 1) % self.team_number;
         while self.afk_players[self.player_playing as usize] {
