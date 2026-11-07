@@ -192,6 +192,13 @@ impl Metagame {
             }
         } else if self.state == State::InGame {
             if self.engine.is_key_pressed(console_engine::KeyCode::Esc) {
+                let req = serde_json::json!({
+                    "type": "server",
+                    "header": "get_points"
+                })
+                .to_string()
+                    + "$";
+                self.client.send(&req);
                 let mut req =
                     "{\"type\": \"lobbies\",\"header\": \"quit_lobby\", \"data\": { \"name\": \""
                         .to_string();
@@ -288,7 +295,7 @@ impl Metagame {
                 .display(&mut self.engine, (left_third, top_left + 10));
             self.home_layout
                 .display(&mut self.engine, (left_third - 3, top_left * 4 / 15));
-            let mut elo_msg = "Elo: ".to_string();
+            let mut elo_msg = "Aura: ".to_string();
             elo_msg.push_str(&self.points.to_string());
             self.engine.print(left_third + 5, top_left + 7, &elo_msg);
         } else if self.state == State::EnterPseudo {

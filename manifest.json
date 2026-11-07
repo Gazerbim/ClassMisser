@@ -164,7 +164,7 @@
 		"response": {
 			"type": "game",
 			"header": "update_board | spawn_rejected",
-			"data": "{ x: [usize], y: [usize], pieces: [i8], player_playing: i8, players_points: [usize] a_player_won: i8 } | {}"
+			"data": "{ x: [usize], y: [usize], pieces: [i8], player_playing: i8, players_points: [usize] a_player_won: i8 elo_changes: [i32] } | {}"
 		}
 	},
 	{

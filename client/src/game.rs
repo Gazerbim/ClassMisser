@@ -1,5 +1,3 @@
-use clap::builder::Str;
-use console_engine::pixel::Pixel;
 use console_engine::{Color, ConsoleEngine, KeyCode, pixel};
 use serde_json::Value;
 
@@ -29,6 +27,7 @@ pub struct Game {
     selected_texture: usize,
     username: String,
     winner: i8,
+    elo_changes: Vec<i32>,
 }
 
 impl Game {
@@ -54,6 +53,7 @@ impl Game {
             selected_texture: 0,
             username: "".to_string(),
             winner: -1,
+            elo_changes: Vec::new(),
         }
     }
 
@@ -127,6 +127,7 @@ impl Game {
             GameState::WaitInit
         };
         self.winner = -1;
+        self.elo_changes = Vec::new();
     }
 
     pub fn set_players_names(&mut self, usernames: Vec<String>) {
@@ -309,6 +310,21 @@ impl Game {
                     Some(_winner) => {
                         self.state = GameState::APlayerWon;
                         self.winner = _winner as i8;
+                        match response.data["elo_changes"].as_array() {
+                            None => {}
+                            Some(_a) => {
+                                for _ec in _a {
+                                    match _ec.as_i64() {
+                                        Some(_c) => {
+                                            self.elo_changes.push(_c as i32);
+                                        }
+                                        None => {
+                                            self.elo_changes.push(0);
+                                        }
+                                    }
+                                }
+                            }
+                        }
                     }
                 }
             }
@@ -727,5 +743,17 @@ impl Game {
             self.team_colors[self.winner as usize],
             Color::Reset,
         );
+        e.print(offset_x + 2, offset_y + 5, "Récap des changements d'aura:");
+        for i in 0..self.players_names.len() {
+            let mut ligne = self.players_names[i].clone();
+            ligne.push_str(" a gagné ");
+            ligne.push_str(&self.elo_changes[i].to_string());
+            if self.elo_changes[i] > 0 {
+                ligne.push_str(" d'aura !");
+            } else {
+                ligne.push_str(" d'aura...");
+            }
+            e.print(offset_x + 3, offset_y + 6 + i as i32, &ligne);
+        }
     }
 }
