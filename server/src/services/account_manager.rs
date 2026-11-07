@@ -5,6 +5,10 @@ use polars::{
         SerReader, SerWriter,
         csv::{read::CsvReader, write::CsvWriter},
     },
+    lazy::{
+        dsl::{col, lit, when},
+        frame::IntoLazy,
+    },
     prelude::CsvReadOptions,
     series::Series,
 };
@@ -120,5 +124,38 @@ impl AccountManager {
             }
         }
         0
+    }
+
+    pub fn set_user_points(&self, username: &String, points: i32) -> PolarsResult<()> {
+        let file_path = "src/data/accounts.csv".to_string();
+        // Read existing file, or start with an empty frame
+        let file = fs::File::open(&file_path)?;
+        let df = if fs::metadata(&file_path).is_ok() {
+            CsvReader::new(file).finish()?
+        } else {
+            df![
+                "username" => [""],
+                "password" => [""],
+                "points" => [0i64],
+            ]?
+            .clear() // drop the placeholder row
+        };
+
+        let mut df = df
+            .lazy()
+            .with_column(
+                when(col("username").eq(lit(username.as_str())))
+                    .then(lit(points))
+                    .otherwise(col("points"))
+                    .alias("points"),
+            )
+            .collect()?;
+
+        let mut f = fs::File::create(&file_path)?;
+        CsvWriter::new(&mut f)
+            .include_header(true)
+            .finish(&mut df)?;
+
+        Ok(())
     }
 }

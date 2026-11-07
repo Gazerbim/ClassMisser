@@ -415,6 +415,8 @@ impl Server {
                                 "game",
                                 request.header.as_str(),
                                 &request.data,
+                                &self.account_manager,
+                                &self.clients,
                             );
                             if response != "".to_string() {
                                 if receiver == Token(0) {
@@ -439,6 +441,8 @@ impl Server {
                                 "chat",
                                 request.header.as_str(),
                                 &request.data,
+                                &self.account_manager,
+                                &self.clients,
                             );
                             if response != "".to_string() {
                                 self.broadcast_to_lobby(id, response.as_str()).unwrap();

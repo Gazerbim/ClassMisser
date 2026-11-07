@@ -4,6 +4,7 @@ use array2d::Array2D;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
+use crate::services::account_manager::AccountManager;
 use crate::services::game_services::board::Board;
 use crate::services::game_services::move_json::Move;
 use crate::services::game_services::pieces::Pieces;
@@ -21,6 +22,7 @@ pub struct Game {
     king_eaten: i8, //>=0 si le joueur mange un roi lors de ce tour
     afk_players: Vec<bool>,
     player_won: i8,
+    elo_changes: [i32; 4],
 }
 
 impl Game {
@@ -36,6 +38,7 @@ impl Game {
             king_eaten: -1,
             afk_players: vec![false, false, false, false],
             player_won: -1,
+            elo_changes: [0, 0, 0, 0],
         }
     }
 
@@ -50,6 +53,7 @@ impl Game {
             king_eaten: -1,
             afk_players: vec![false, false, false, false],
             player_won: -1,
+            elo_changes: [0, 0, 0, 0],
         }
     }
 
@@ -75,6 +79,10 @@ impl Game {
 
     pub fn get_player_won(&self) -> i8 {
         self.player_won
+    }
+
+    pub fn get_elo_changes(&self) -> &[i32; 4] {
+        &self.elo_changes
     }
 
     /// passe la main au joueur suivant.
@@ -183,6 +191,7 @@ impl Game {
                     return (sender, Self::simple_message("move_rejected"));
                 } else {
                     if self.king_eaten >= 0 {
+                        self.elo_changes[self.player_playing as usize] += 1000;
                         self.board.a_player_lost(
                             self.player_playing,
                             self.king_eaten,
@@ -213,6 +222,7 @@ impl Game {
                 let a_player_won = self.board.a_player_won(&self.pieces); // =-1 quand non
                 if a_player_won != -1 {
                     self.player_won = a_player_won;
+                    self.elo_changes[self.player_won as usize] += 3000;
                 }
 
                 let message = serde_json::json!({
@@ -225,7 +235,8 @@ impl Game {
                         "player_playing": self.player_playing,
                         "players_points": self.players_points,
                         "special_action": special, //pour quand le joueur n'a plus de pièces à bouger
-                        "a_player_won": &a_player_won
+                        "a_player_won": &a_player_won,
+                        "elo_changes": self.elo_changes
                     }
                 })
                 .to_string()

@@ -3,7 +3,7 @@ use std::usize::MAX;
 use mio::Token;
 use serde_json::Value;
 
-use crate::services::{chat::Chat, clients::Clients, game::Game};
+use crate::services::{account_manager::AccountManager, chat::Chat, clients::Clients, game::Game};
 
 #[derive(PartialEq)]
 pub enum PlayerState {
@@ -125,13 +125,6 @@ impl Lobby {
         self.in_game
     }
 
-    pub fn game_ended(&self) -> bool {
-        if self.game.get_player_won() != -1 {
-            return true;
-        }
-        false
-    }
-
     pub fn remove_player(&mut self, player_token: &Token) -> usize {
         let mut index_removed = MAX;
         for i in 0..self.list_players.len() {
@@ -225,6 +218,8 @@ impl Lobby {
         request_type: &str,
         header: &str,
         data: &Value,
+        points_manager: &AccountManager,
+        clients: &Clients,
     ) -> (Token, String) {
         let sender_id = self.list_players.iter().position(|t| *t == sender);
         match sender_id {
@@ -237,6 +232,22 @@ impl Lobby {
                             && self.player_states[i] == PlayerState::Playing
                         {
                             self.player_states[i] = PlayerState::Lost;
+                        }
+                    }
+                    if self.game.get_player_won() != -1 {
+                        for i in 0..self.number_of_players {
+                            match clients.get_username(&self.list_players[i as usize]) {
+                                None => {}
+                                Some(_u) => {
+                                    let points = points_manager.get_user_points(&_u) as i32;
+                                    points_manager
+                                        .set_user_points(
+                                            &_u,
+                                            points + self.game.get_elo_changes()[i as usize],
+                                        )
+                                        .unwrap();
+                                }
+                            }
                         }
                     }
                     if message != "".to_string() {
