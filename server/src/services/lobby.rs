@@ -122,6 +122,13 @@ impl Lobby {
         self.in_game
     }
 
+    pub fn game_ended(&self) -> bool {
+        if self.game.get_player_won() != -1 {
+            return true;
+        }
+        false
+    }
+
     pub fn remove_player(&mut self, player_token: &Token) -> usize {
         let mut index_removed = MAX;
         for i in 0..self.list_players.len() {
@@ -137,7 +144,9 @@ impl Lobby {
                             self.player_states[i] = PlayerState::Disconnected;
                         }
                         self.game.set_player_afk_state(i, true);
-                        if self.game.get_player_playing() == i as i8 {
+                        if self.game.get_player_playing() == i as i8
+                            && self.game.get_player_won() == -1
+                        {
                             self.game.end_turn();
                         }
                     }
@@ -209,6 +218,14 @@ impl Lobby {
             Some(_sender) => match request_type {
                 "game" => {
                     let (who, message) = self.game.handle_request(_sender as i8, header, data);
+                    //check si un joueur à perdu, i.e. il est afl dans le jeux mais en state Playing
+                    for i in 0..self.player_states.len() {
+                        if self.game.get_player_afk_state(i)
+                            && self.player_states[i] == PlayerState::Playing
+                        {
+                            self.player_states[i] = PlayerState::Lost;
+                        }
+                    }
                     if message != "".to_string() {
                         if who < 0 {
                             (Token(0), message)

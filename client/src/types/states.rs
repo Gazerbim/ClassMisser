@@ -22,4 +22,5 @@ pub enum GameState {
     WaitPlay,
     WaitChoosePiece,
     WaitEnd,
+    APlayerWon,
 }

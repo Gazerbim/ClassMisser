@@ -1,4 +1,5 @@
 use clap::builder::Str;
+use console_engine::pixel::Pixel;
 use console_engine::{Color, ConsoleEngine, KeyCode, pixel};
 use serde_json::Value;
 
@@ -27,6 +28,7 @@ pub struct Game {
     spectators_names: Vec<String>,
     selected_texture: usize,
     username: String,
+    winner: i8,
 }
 
 impl Game {
@@ -51,6 +53,7 @@ impl Game {
             spectators_names: vec![],
             selected_texture: 0,
             username: "".to_string(),
+            winner: -1,
         }
     }
 
@@ -121,6 +124,7 @@ impl Game {
         } else {
             GameState::WaitInit
         };
+        self.winner = -1;
     }
 
     pub fn set_players_names(&mut self, usernames: Vec<String>) {
@@ -129,6 +133,48 @@ impl Game {
 
     pub fn set_spectators_names(&mut self, usernames: Vec<String>) {
         self.spectators_names = usernames;
+    }
+
+    fn change_player_playing(&mut self, player: i8, special_action: Option<&str>) {
+        if (0..=3).contains(&player) {
+            self.is_playing = player as i32;
+
+            if self.is_playing != self.color {
+                self.awaiting_move = false;
+                self.choosing_spawn = false;
+                self.spawn_positions.clear();
+                self.state = GameState::WaitEnd;
+            } else {
+                let found = match special_action {
+                    Some("buy_piece") => {
+                        // force à choisir la piece a faire spawner
+                        self.awaiting_move = false;
+                        self.selected_piece = 0;
+                        self.state = GameState::WaitChoosePiece;
+                        true
+                    }
+                    Some("skip_spawn") => {
+                        self.awaiting_move = false;
+                        self.choosing_spawn = false;
+                        self.spawn_positions.clear();
+                        self.state = GameState::WaitPlay;
+                        true
+                    }
+                    Some(_) => false,
+                    None => false,
+                };
+                if !found {
+                    if self.awaiting_move {
+                        // choisir la piece a faire spawner
+                        self.awaiting_move = false;
+                        self.selected_piece = 0;
+                        self.state = GameState::WaitChoosePiece;
+                    } else if self.state != GameState::WaitChoosePiece && !self.choosing_spawn {
+                        self.state = GameState::WaitPlay;
+                    }
+                }
+            }
+        }
     }
 
     pub fn handle_server(&mut self, response: Response) {
@@ -179,6 +225,13 @@ impl Game {
                     None => {}
                 }
                 self.spectators_names = new_spectators;
+                match response.data["player_playing"].as_i64() {
+                    Some(-1) => {}
+                    Some(_player) => {
+                        self.change_player_playing(_player as i8, None);
+                    }
+                    None => {}
+                }
             }
             "piece_moves" => {
                 let x: Option<Vec<usize>> = response.data["x"].as_array().map(|arr| {
@@ -234,47 +287,26 @@ impl Game {
                     }
                 }
 
-                if let Some(player) = response.data["player_playing"].as_i64() {
-                    if (0..=3).contains(&player) {
-                        self.is_playing = player as i32;
-
-                        if self.is_playing != self.color {
-                            self.awaiting_move = false;
-                            self.choosing_spawn = false;
-                            self.spawn_positions.clear();
-                            self.state = GameState::WaitEnd;
-                        } else {
-                            let found = match response.data["special_action"].as_str() {
-                                Some("buy_piece") => {
-                                    // force à choisir la piece a faire spawner
-                                    self.awaiting_move = false;
-                                    self.selected_piece = 0;
-                                    self.state = GameState::WaitChoosePiece;
-                                    true
-                                }
-                                Some("skip_spawn") => {
-                                    self.awaiting_move = false;
-                                    self.choosing_spawn = false;
-                                    self.spawn_positions.clear();
-                                    self.state = GameState::WaitPlay;
-                                    true
-                                }
-                                Some(_) => false,
-                                None => false,
-                            };
-                            if !found {
-                                if self.awaiting_move {
-                                    // choisir la piece a faire spawner
-                                    self.awaiting_move = false;
-                                    self.selected_piece = 0;
-                                    self.state = GameState::WaitChoosePiece;
-                                } else if self.state != GameState::WaitChoosePiece
-                                    && !self.choosing_spawn
-                                {
-                                    self.state = GameState::WaitPlay;
-                                }
-                            }
+                match response.data["a_player_won"].as_i64() {
+                    Some(-1) => {
+                        if let Some(player) = response.data["player_playing"].as_i64() {
+                            self.change_player_playing(
+                                player as i8,
+                                response.data["special_action"].as_str(),
+                            );
                         }
+                    }
+                    None => {
+                        if let Some(player) = response.data["player_playing"].as_i64() {
+                            self.change_player_playing(
+                                player as i8,
+                                response.data["special_action"].as_str(),
+                            );
+                        }
+                    }
+                    Some(_winner) => {
+                        self.state = GameState::APlayerWon;
+                        self.winner = _winner as i8;
                     }
                 }
             }
@@ -530,8 +562,12 @@ impl Game {
             );
         }
 
-        // informations des joueurs sous le plateau.
+        // informations des joueurs à côté du plateau.
         self.display_players_info(e);
+
+        if self.state == GameState::APlayerWon {
+            self.display_a_player_won(e);
+        }
     }
 
     pub fn display_all_pieces(&mut self, e: &mut ConsoleEngine, team: i8, team_colors: [Color; 4]) {
@@ -668,5 +704,26 @@ impl Game {
                     .unwrap_or(false)
             })
             .collect()
+    }
+
+    fn display_a_player_won(&self, e: &mut ConsoleEngine) {
+        let offset_x = 0;
+        let offset_y = self.board.board_size() as i32 * 3;
+        e.fill_rect(
+            offset_x,
+            offset_y,
+            offset_x + self.board.board_size() as i32 * 5,
+            offset_y + 10,
+            pixel::pxl_bg(' ', Color::Reset),
+        );
+        let mut text = self.players_names[self.winner as usize].clone();
+        text.push_str(" a gagné la partie !!!");
+        e.print_fbg(
+            offset_x + 2,
+            offset_y + 3,
+            &text,
+            self.team_colors[self.winner as usize],
+            Color::Reset,
+        );
     }
 }

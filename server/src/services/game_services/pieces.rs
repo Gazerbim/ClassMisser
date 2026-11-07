@@ -152,10 +152,14 @@ impl Pieces {
     }
 
     pub fn get_first_king_index(&self) -> i8 {
-        self.pieces.iter().find(|piece| piece.is_king()).map(|piece| piece.index).expect("You dont have any king registered ! Add a king to the pieces file")
+        self.pieces
+            .iter()
+            .find(|piece| piece.is_king())
+            .map(|piece| piece.index)
+            .expect("You dont have any king registered ! Add a king to the pieces file")
     }
 
-    pub fn get_king_index(&mut self) -> i8 {
+    pub fn get_king_index(&self) -> i8 {
         self.king_index
     }
 
@@ -167,7 +171,6 @@ impl Pieces {
     pub fn set_king_index(&mut self, index: i8) {
         self.king_index = index;
     }
-
 
     //reads the pieces from the json file and returns them as a string
     pub fn read_pieces_from_json_file() -> String {

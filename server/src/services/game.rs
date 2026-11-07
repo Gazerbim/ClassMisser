@@ -20,6 +20,7 @@ pub struct Game {
     has_moved: bool,
     king_eaten: i8, //>=0 si le joueur mange un roi lors de ce tour
     afk_players: Vec<bool>,
+    player_won: i8,
 }
 
 impl Game {
@@ -34,6 +35,7 @@ impl Game {
             has_moved: false,
             king_eaten: -1,
             afk_players: vec![false, false, false, false],
+            player_won: -1,
         }
     }
 
@@ -47,11 +49,16 @@ impl Game {
             has_moved: false,
             king_eaten: -1,
             afk_players: vec![false, false, false, false],
+            player_won: -1,
         }
     }
 
     pub fn set_player_afk_state(&mut self, to_change: usize, new_state: bool) {
         self.afk_players[to_change] = new_state;
+    }
+
+    pub fn get_player_afk_state(&self, player: usize) -> bool {
+        self.afk_players[player]
     }
 
     pub fn get_simplified_board(&self) -> (Vec<usize>, Vec<usize>, Vec<i8>) {
@@ -64,6 +71,10 @@ impl Game {
 
     pub fn get_player_playing(&self) -> i8 {
         self.player_playing
+    }
+
+    pub fn get_player_won(&self) -> i8 {
+        self.player_won
     }
 
     /// passe la main au joueur suivant.
@@ -172,12 +183,12 @@ impl Game {
                     return (sender, Self::simple_message("move_rejected"));
                 } else {
                     if self.king_eaten >= 0 {
-                        println!("le joueur {} a gagné", self.king_eaten);
                         self.board.a_player_lost(
                             self.player_playing,
                             self.king_eaten,
                             &self.pieces,
                         );
+                        self.afk_players[self.king_eaten as usize] = true; //si le joueur perd, il deviens afk, i.e. ne peut plus jouer
                         self.king_eaten = -1;
                         let (old_x, old_y, old_p) = (x, y, p);
                         (x, y, p) = self.board.get_simplfied_board();
@@ -199,6 +210,11 @@ impl Game {
                     special = "skip_spawn"
                 }
 
+                let a_player_won = self.board.a_player_won(&self.pieces); // =-1 quand non
+                if a_player_won != -1 {
+                    self.player_won = a_player_won;
+                }
+
                 let message = serde_json::json!({
                     "type": "game",
                     "header": "update_board",
@@ -209,6 +225,7 @@ impl Game {
                         "player_playing": self.player_playing,
                         "players_points": self.players_points,
                         "special_action": special, //pour quand le joueur n'a plus de pièces à bouger
+                        "a_player_won": &a_player_won
                     }
                 })
                 .to_string()

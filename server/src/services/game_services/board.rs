@@ -83,6 +83,25 @@ impl Board {
         (x, y, p)
     }
 
+    pub fn a_player_won(&self, pieces: &Pieces) -> i8 {
+        let mut winner = -1;
+        let king_index = pieces.get_king_index();
+        for i in 0..self.board_size {
+            for j in 0..self.board_size {
+                if self.data[(i, j)] > 0 {
+                    if pieces.get_piece_index(self.data[(i, j)]) == king_index {
+                        if winner != -1 {
+                            return -1;
+                        } else {
+                            winner = pieces.get_team(self.data[(i, j)]);
+                        }
+                    }
+                }
+            }
+        }
+        winner
+    }
+
     pub fn get_board_size(&self) -> usize {
         self.board_size
     }
@@ -168,7 +187,6 @@ impl Board {
         //les pièces du joueur qui à perdu deviennent celles du joueur qui a gagné
         for i in 0..self.board_size {
             for j in 0..self.board_size {
-                println!("piece id: {}", self.data[(i, j)]);
                 if self.data[(i, j)] > 0 && pieces.get_team(self.data[(i, j)]) == player_lost {
                     self.data[(i, j)] = pieces.get_piece_index(self.data[(i, j)])
                         + player_won * pieces.get_number_of_different_pieces();

@@ -1,6 +1,5 @@
 En vrac:
--> rejoindre un lobby déjà en game
--> finir une partie
+-> empêcher deux lobby du même nom en même temps
 -> elo
 -> supprimer bouton paramètres
 -> améliorer chat
