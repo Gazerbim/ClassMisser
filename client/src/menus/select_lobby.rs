@@ -13,6 +13,7 @@ impl SelectLobby {
 
     pub fn set_elements_list(&mut self, new_list: Vec<String>) {
         self.elements = new_list;
+        self.selector = 0;
     }
 
     pub fn handling_events(&mut self, e: &console_engine::ConsoleEngine) -> String {
@@ -24,11 +25,15 @@ impl SelectLobby {
         {
             self.selector = self.selector + 1;
         }
-        if e.is_key_pressed(console_engine::KeyCode::Enter) {
+        if e.is_key_pressed(console_engine::KeyCode::Enter) && !self.elements.is_empty() {
             return self.elements[self.selector as usize].clone();
         } else {
             return "".to_string();
         }
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.elements.is_empty()
     }
 
     pub fn update(&self) {}
