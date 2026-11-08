@@ -116,6 +116,7 @@ impl Game {
         self.board = Board::new();
         self.save = SaveGame::new(self.pieces.clone());
         self.board.init(board_size, team_number, xc, yc, all_pieces);
+        self.save.add_board_from_board(&self.board);
         self.color = color;
         self.is_playing = 0;
         self.team_number = team_number;

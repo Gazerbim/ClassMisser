@@ -7,8 +7,8 @@ use console_engine::{Color, ConsoleEngine, pixel};
 
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-struct BaseBoard{
-    data: Vec<Vec<i8>>,
+pub struct BaseBoard{
+    pub data: Vec<Vec<i8>>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -40,10 +40,29 @@ impl SaveGame {
         &self.boards
     }
 
+    /// sauve garde de la partie
     pub fn save_boards_to_file(&self, file_path: &str) -> Result<(), Box<dyn std::error::Error>> {
-        let serialized = serde_json::to_string(&self.boards)?;
+        if let Some(dir) = std::path::Path::new(file_path).parent() {
+            std::fs::create_dir_all(dir)?; // si le dossier n'existe pas -> creer
+        }
+        let serialized = serde_json::to_string(self)?;
         std::fs::write(file_path, serialized)?;
         Ok(())
+    }
+
+    pub fn from_file(file_path: &str) -> Result<SaveGame, Box<dyn std::error::Error>> {
+        let data = std::fs::read_to_string(file_path)?;
+        if let Ok(save) = serde_json::from_str::<SaveGame>(&data) {
+            return Ok(save);
+        }
+        let boards: Vec<BaseBoard> = serde_json::from_str(&data)?;
+        let mut pieces = Pieces::new();
+        pieces.load_pieces(4); // deux types de formats : soit avec les pieces, soit sans
+        Ok(SaveGame { pieces, boards })
+    }
+
+    pub fn len(&self) -> usize {
+        self.boards.len()
     }
 
     pub fn load_boards_from_file(&mut self, file_path: &str) -> Result<(), Box<dyn std::error::Error>> {
@@ -106,7 +125,7 @@ impl SaveGame {
             }
         };
 
-        // Fond de la case
+        //fond de la case
         for dy in 0..HEIGHT {
             for dx in 0..WIDTH {
                 engine.set_pxl(
@@ -117,7 +136,7 @@ impl SaveGame {
             }
         }
 
-        // Pièce
+        // pièce
         if value > 0 {
             let color: Color = team_colors[self.pieces.get_team(value) as usize];
             engine.set_pxl(
@@ -143,26 +162,22 @@ impl SaveGame {
                 return board.data[y][x];
             }
         }
-        -1 // Return -1 if the coordinates are out of bounds or if there are no boards
+        -1
     }
 
     pub fn display(
-        &mut self,
+        &self,
         engine: &mut ConsoleEngine,
         team_colors: &[Color; 4],
         selected_texture: usize,
         frame_index: usize,
     ) {
-        for y in 0..self.boards[frame_index].data.len() {
-            for x in 0..self.boards[frame_index].data[y].len() {
-                self.draw_square(
-                    engine,
-                    x,
-                    y,
-                    self.get(x, y),
-                    team_colors,
-                    selected_texture
-                );
+        let Some(board) = self.boards.get(frame_index) else {
+            return;
+        };
+        for y in 0..board.data.len() {
+            for x in 0..board.data[y].len() {
+                self.draw_square(engine, x, y, board.data[y][x], team_colors, selected_texture);
             }
         }
     }

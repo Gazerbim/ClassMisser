@@ -8,6 +8,7 @@ use crate::client::Client;
 use crate::game::Game;
 use crate::menus::config::Config;
 use crate::menus::home::Home;
+use crate::menus::replay::Replay;
 use crate::types::protocol::Response;
 use crate::types::states::{Focus, State};
 
@@ -30,13 +31,30 @@ pub struct Metagame {
     lobby_creator: TextInput,
     in_lobby: InLobby,
     config: Config,
+    saves_selector: SelectLobby,
+    replay: Replay,
 
     username: String,
     password: String,
     points: usize,
 }
 
+const SAVES_DIR: &str = "saves";
+
 impl Metagame {
+    fn list_saves() -> Vec<String> {
+        let mut names: Vec<String> = std::fs::read_dir(SAVES_DIR)
+            .map(|dir| {
+                dir.filter_map(|e| e.ok())
+                    .filter_map(|e| e.file_name().into_string().ok())
+                    .filter_map(|f| f.strip_suffix("_save.json").map(String::from))
+                    .collect()
+            })
+            .unwrap_or_default();
+        names.sort();
+        names
+    }
+
     pub fn get_client(&mut self) -> &mut Client {
         &mut self.client
     }
@@ -56,12 +74,15 @@ impl Metagame {
             home: SelectLobby::new(vec![
                 String::from("Créer un salon"),
                 String::from("Rejoindre un salon"),
+                String::from("Saves"),
                 String::from("Quitter"),
             ]),
             home_layout: Home::new(),
             enter_username: TextInput::new(String::from("Rentre to pseudo ici:"), 25),
             config: config,
             lobby_selector: SelectLobby::new(Vec::new()),
+            saves_selector: SelectLobby::new(Vec::new()),
+            replay: Replay::new(),
             lobby_creator: TextInput::new("Nom du salon à créer".to_string(), 25),
             in_lobby: InLobby::new("".to_string()),
             username: String::from(""),
@@ -146,11 +167,29 @@ impl Metagame {
                 }
             } else if action == "Créer un salon".to_string() {
                 self.state = State::CreateLobby;
+            } else if action == "Saves" {
+                self.saves_selector.set_elements_list(Self::list_saves());
+                self.state = State::Saves;
             }
 
             if self.engine.is_key_pressed(console_engine::KeyCode::Esc) {
                 return true; // exits app
             }
+        } else if self.state == State::Saves {
+            if self.engine.is_key_pressed(console_engine::KeyCode::Esc) {
+                self.state = State::Home;
+            }
+            let name = self.saves_selector.handling_events(&self.engine);
+            if name != "" {
+                self.replay
+                    .load(&name, &format!("{}/{}_save.json", SAVES_DIR, name));
+                self.state = State::Replay;
+            }
+        } else if self.state == State::Replay {
+            if self.engine.is_key_pressed(console_engine::KeyCode::Esc) {
+                self.state = State::Saves;
+            }
+            self.replay.handling_events(&self.engine);
         } else if self.state == State::EnterPseudo {
             self.enter_username.handling_events(&self.engine);
             if self.engine.is_key_pressed(console_engine::KeyCode::Esc) {
@@ -299,6 +338,25 @@ impl Metagame {
             let mut elo_msg = "Aura: ".to_string();
             elo_msg.push_str(&self.points.to_string());
             self.engine.print(left_third + 5, top_left + 7, &elo_msg);
+        } else if self.state == State::Saves {
+            self.engine.print(
+                left_third,
+                top_left - 2,
+                "Saves (Entree : lire, Echap : retour)",
+            );
+            if self.saves_selector.is_empty() {
+                self.engine.print(left_third, top_left, "Aucune sauvegarde");
+            }
+            self.saves_selector
+                .display(&mut self.engine, (left_third, top_left));
+        } else if self.state == State::Replay {
+            let texture = self
+                .config
+                .get_option("selected_texture")
+                .and_then(|v| v.as_u64())
+                .unwrap_or(0) as usize;
+            self.replay
+                .display(&mut self.engine, self.game.get_team_colors(), texture);
         } else if self.state == State::EnterPseudo {
             self.enter_username
                 .display(&mut self.engine, (left_third, top_left));

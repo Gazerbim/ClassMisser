@@ -3,6 +3,8 @@ pub enum State {
     EnterPseudo,
     EnterPassword,
     Home,
+    Saves,
+    Replay,
     ChooseLobby,
     CreateLobby,
     InLobby,
