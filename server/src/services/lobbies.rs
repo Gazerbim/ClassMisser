@@ -1,14 +1,9 @@
-use std::{collections::HashMap, usize::MAX};
+use std::collections::HashMap;
 
 use mio::Token;
 use serde_json::{Number, Value};
 
-use crate::services::{
-    chat::Chat,
-    clients::Clients,
-    game::Game,
-    lobby::{Lobby, PlayerState},
-};
+use crate::services::{chat::Chat, clients::Clients, game::Game, lobby::Lobby};
 
 pub struct Lobbies {
     pub list: HashMap<usize, Lobby>,
@@ -34,9 +29,9 @@ impl Lobbies {
     }
 
     pub fn get_player_lobby_id(&self, player: Token) -> i32 {
-        for i in 0..self.list.len() {
-            if self.list[&i].is_player_in_game(player) {
-                return i as i32;
+        for k in self.list.keys() {
+            if self.list[k].is_player_in_game(player) {
+                return *k as i32;
             }
         }
         -1

@@ -1,10 +1,10 @@
 En vrac:
 -> retirer un max de 'unwrap' du serveur
--> crash serveur lignes 38 dans lobbies
 -> popup quand on fait echap lors d'une partie
 -> rajouter indicateur sur le focus (jeux / chat)
 -> rajouter indicateur quand c'est à nous de jouer
 -> majuscules dans le chat !!
 -> sycrhronisation version client/serveur
 -> rajouter indicateur chargement
+-> transition owner lorsque la partie n'a pas commencé
 -> lorsqu'un spectateur arrive dans la partie, il n'a pas les points (mis à jour dès qu'un joueur joue donc c'est relativement ok)
