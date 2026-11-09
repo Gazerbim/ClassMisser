@@ -1,2 +1,4 @@
 /server/target
+/server/data/accounts.csv
 /client/target
+/client/saves
