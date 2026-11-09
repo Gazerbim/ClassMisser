@@ -1,6 +1,5 @@
 En vrac:
 -> améliorer chat
--> les pions peuvent manger sur le côté
 -> retirer un max de 'unwrap' du serveur
 -> popup quand on fait echap lors d'une partie
 -> rajouter indicateur sur le focus (jeux / chat)
