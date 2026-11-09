@@ -60,6 +60,7 @@ fn synchronise_pieces(game: &mut Metagame) {
         other => other.to_string(),
     };
     pieces_synchronisation::synchronise_pieces(pieces, PIECES_JSON);
+    println!("Pièces synchronisées avec succès depuis le serveur.");
 }
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
