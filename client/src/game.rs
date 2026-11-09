@@ -760,12 +760,12 @@ impl Game {
         text.push_str(" a gagné la partie !!!");
         e.print_fbg(
             offset_x + 2,
-            offset_y + 3,
+            offset_y,
             &text,
             self.team_colors[self.winner as usize],
             Color::Reset,
         );
-        e.print(offset_x + 2, offset_y + 5, "Récap des changements d'aura:");
+        e.print(offset_x + 2, offset_y + 2, "Récap des changements d'aura:");
         for i in 0..self.players_names.len() {
             let mut ligne = self.players_names[i].clone();
             ligne.push_str(" a gagné ");
@@ -775,7 +775,7 @@ impl Game {
             } else {
                 ligne.push_str(" d'aura...");
             }
-            e.print(offset_x + 3, offset_y + 6 + i as i32, &ligne);
+            e.print(offset_x + 3, offset_y + 3 + i as i32, &ligne);
         }
     }
 }
