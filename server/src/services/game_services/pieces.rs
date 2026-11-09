@@ -75,6 +75,9 @@ impl Pieces {
         let mut moves = Vec::new();
 
         for m in &piece.moves {
+            if !piece.can_eat_with_basic_move() && board.is_occupied((m.x + x as i8) as usize, (m.y + y as i8) as usize) {
+                continue;
+            }
             let mut step: i8 = 1;
 
             loop {

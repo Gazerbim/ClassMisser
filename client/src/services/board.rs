@@ -196,13 +196,14 @@ impl Board {
             engine.set_pxl(
                 (screen_x + 2) as i32,
                 (screen_y + 1) as i32,
-                pixel::pxl_bg(' ', color),
+                //get the second caracter of the label, if it exists, otherwise use a space
+                pixel::pxl_fbg(pieces.get_piece_from_id(value).get_label(selected_texture).chars().nth(1).unwrap_or(' '), Color::Black, color),
             );
             engine.set_pxl(
                 (screen_x + 1) as i32,
                 (screen_y + 1) as i32,
                 pixel::pxl_fbg(
-                    *pieces.get_piece_from_id(value).get_label(selected_texture),
+                    pieces.get_piece_from_id(value).get_label(selected_texture).chars().nth(0).unwrap_or(' '),
                     Color::Black,
                     color,
                 ),

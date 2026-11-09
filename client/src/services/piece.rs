@@ -6,8 +6,8 @@ pub struct Piece {
     name: String,
     pub index: i8,
     cost: i8,
-    pub label: char,
-    pub custom_label: char,
+    pub label: String,
+    pub custom_label: String,
     pub team: i8,
     is_king: bool,
 }
@@ -17,8 +17,8 @@ impl Piece {
         name: String,
         index: i8,
         cost: i8,
-        label: char,
-        custom_label: char,
+        label: String,
+        custom_label: String,
         team: i8,
         is_king: bool,
     ) -> Piece {
@@ -37,13 +37,14 @@ impl Piece {
         self.cost
     }
 
-    pub fn get_label(&self, selected_texture: usize) -> &char {
+    pub fn get_label(&self, selected_texture: usize) -> &String {
         if selected_texture == 0 {
             &self.label
         } else {
             &self.custom_label
         }
     }
+    
 
     pub fn is_king(&self) -> bool {
         self.is_king

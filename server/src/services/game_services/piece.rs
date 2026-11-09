@@ -9,6 +9,7 @@ pub struct Piece {
     pub extendable: bool,
     cost: i8,
     label: String,
+    can_eat_with_basic_move: bool,
     pub team: i8,
     eating_moves: Vec<Move>,
     is_king: bool,
@@ -22,6 +23,7 @@ impl Piece {
         extendable: bool,
         cost: i8,
         label: String,
+        can_eat_with_basic_move: bool,
         team: i8,
         eating_moves: Vec<Move>,
         is_king: bool,
@@ -33,6 +35,7 @@ impl Piece {
             extendable: extendable,
             cost: cost,
             label: label,
+            can_eat_with_basic_move: can_eat_with_basic_move,
             team: team,
             eating_moves: eating_moves,
             is_king: is_king,
@@ -41,6 +44,10 @@ impl Piece {
 
     pub fn get_cost(&self) -> i8 {
         self.cost
+    }
+
+    pub fn can_eat_with_basic_move(&self) -> bool {
+        self.can_eat_with_basic_move
     }
 
     pub fn get_name(&self) -> &str {

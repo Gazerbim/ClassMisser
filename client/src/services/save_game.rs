@@ -142,13 +142,13 @@ impl SaveGame {
             engine.set_pxl(
                 (screen_x + 2) as i32,
                 (screen_y + 1) as i32,
-                pixel::pxl_bg(' ', color),
+                pixel::pxl_fbg(self.pieces.get_piece_from_id(value).get_label(selected_texture).chars().nth(1).unwrap_or(' '), Color::Black, color),
             );
             engine.set_pxl(
                 (screen_x + 1) as i32,
                 (screen_y + 1) as i32,
                 pixel::pxl_fbg(
-                    *self.pieces.get_piece_from_id(value).get_label(selected_texture),
+                    self.pieces.get_piece_from_id(value).get_label(selected_texture).chars().nth(0).unwrap_or(' '),
                     Color::Black,
                     color,
                 ),

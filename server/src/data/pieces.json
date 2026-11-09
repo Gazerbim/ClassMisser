@@ -11,6 +11,7 @@
         "extendable":false,
         "cost":2,
         "label":"♙",
+        "can_eat_with_basic_move": false,
         "eating_moves": [
             { "x": 1, "y": 1},
             { "x": 1, "y": -1},
@@ -32,6 +33,7 @@
         "extendable":true,
         "cost":5,
         "label":"♖",
+        "can_eat_with_basic_move": false,
         "eating_moves": [],
         "team":0,
         "is_king": false
@@ -48,6 +50,7 @@
         "extendable":true,
         "cost":3,
         "label":"♗",
+        "can_eat_with_basic_move": false,
         "eating_moves": [],
         "team":0,
         "is_king": false
@@ -68,6 +71,7 @@
         "extendable":false,
         "cost":3,
         "label":"♘",
+        "can_eat_with_basic_move": false,
         "eating_moves": [],
         "team":0,
         "is_king": false
@@ -88,6 +92,7 @@
         "extendable":true,
         "cost":9,
         "label":"♕",
+        "can_eat_with_basic_move": false,
         "eating_moves": [],
         "team":0,
         "is_king": false
@@ -99,6 +104,7 @@
         "extendable":false,
         "cost":100,
         "label":" ",
+        "can_eat_with_basic_move": false,
         "eating_moves": [],
         "team":0,
         "is_king": true
