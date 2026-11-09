@@ -94,6 +94,7 @@ impl Metagame {
     pub fn connect(&mut self, username: String, password: String, header: &str) -> bool {
         self.username = username.clone();
         self.password = password.clone();
+        self.chat.set_username(&username);
         let req = serde_json::json!({
             "type": "username",
             "header": header,
@@ -266,7 +267,7 @@ impl Metagame {
                         .unwrap() as usize,
                 );
             } else {
-                self.chat.handling_events(&self.engine, self.username.len());
+                self.chat.handling_events(&self.engine);
             }
         }
         false
