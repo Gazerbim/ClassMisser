@@ -126,6 +126,8 @@ impl Lobby {
     }
 
     pub fn remove_player(&mut self, player_token: &Token) -> usize {
+        println!("len: {}", self.list_players.len());
+        println!("states: {}", self.player_states.len());
         let mut index_removed = MAX;
         for i in 0..self.list_players.len() {
             if self.list_players[i] == *player_token {
@@ -178,14 +180,18 @@ impl Lobby {
         //     }
         // }
         // false
-        for i in 0..self.player_states.len() {
-            if self.player_states[i] == PlayerState::Playing
-                || self.player_states[i] == PlayerState::Lost
-            {
-                return false;
+        if self.in_game {
+            for i in 0..self.player_states.len() {
+                if self.player_states[i] == PlayerState::Playing
+                    || self.player_states[i] == PlayerState::Lost
+                {
+                    return false;
+                }
             }
+            true
+        } else {
+            self.list_players.len() == 0
         }
-        true
     }
 
     pub fn get_lobby_info(&self, clients: &Clients) -> Value {

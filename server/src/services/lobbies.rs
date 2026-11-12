@@ -3,7 +3,12 @@ use std::collections::HashMap;
 use mio::Token;
 use serde_json::{Number, Value};
 
-use crate::services::{chat::Chat, clients::Clients, game::Game, lobby::Lobby};
+use crate::services::{
+    chat::Chat,
+    clients::Clients,
+    game::Game,
+    lobby::{Lobby, PlayerState},
+};
 
 pub struct Lobbies {
     pub list: HashMap<usize, Lobby>,
@@ -221,7 +226,7 @@ impl Lobbies {
                         game: Game::empty(),
                         chat: Chat::new(),
                         number_of_players: 0,
-                        player_states: Vec::new(),
+                        player_states: vec![PlayerState::Playing],
                     },
                 );
                 response_header = "created_lobby";
