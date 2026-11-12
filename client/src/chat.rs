@@ -105,20 +105,36 @@ impl Chat {
         }
     }
 
-    pub fn display(&self, e: &mut ConsoleEngine, colors: &[Color; 4]) {
+    pub fn display(&self, e: &mut ConsoleEngine, colors: &[Color; 4], focus: bool) {
+        let focus_color = if focus { Color::Green } else { Color::Reset };
+
         e.line(
             self.x,
             self.y,
             self.x,
-            self.y + self.height,
+            self.y + self.height - 4,
             pixel::pxl('|'),
+        );
+        e.line(
+            self.x,
+            self.y + self.height - 4,
+            self.x,
+            self.y + self.height,
+            pixel::pxl_fg('|', focus_color),
         );
         e.line(
             self.x + self.length,
             self.y,
             self.x + self.length,
-            self.y + self.height,
+            self.y + self.height - 4,
             pixel::pxl('|'),
+        );
+        e.line(
+            self.x + self.length,
+            self.y + self.height - 4,
+            self.x + self.length,
+            self.y + self.height,
+            pixel::pxl_fg('|', focus_color),
         );
         e.line(
             self.x,
@@ -132,24 +148,37 @@ impl Chat {
             self.y + self.height,
             self.x + self.length,
             self.y + self.height,
-            pixel::pxl('-'),
+            pixel::pxl_fg('-', focus_color),
         );
         e.line(
             self.x,
             self.y + self.height - 4,
             self.x + self.length,
             self.y + self.height - 4,
-            pixel::pxl('-'),
+            pixel::pxl_fg('-', focus_color),
         );
-        e.set_pxl(self.x, self.y + self.height, pixel::pxl('+'));
-        e.set_pxl(self.x + self.length, self.y + self.height, pixel::pxl('+'));
+
+        e.set_pxl(
+            self.x,
+            self.y + self.height,
+            pixel::pxl_fg('+', focus_color),
+        );
+        e.set_pxl(
+            self.x + self.length,
+            self.y + self.height,
+            pixel::pxl_fg('+', focus_color),
+        );
         e.set_pxl(self.x, self.y, pixel::pxl('+'));
         e.set_pxl(self.x + self.length, self.y, pixel::pxl('+'));
-        e.set_pxl(self.x, self.y + self.height - 4, pixel::pxl('+'));
+        e.set_pxl(
+            self.x,
+            self.y + self.height - 4,
+            pixel::pxl_fg('+', focus_color),
+        );
         e.set_pxl(
             self.x + self.length,
             self.y + self.height - 4,
-            pixel::pxl('+'),
+            pixel::pxl_fg('+', focus_color),
         );
 
         //e.print(self.x + 1, self.y + self.height - 3, &self.buffer);

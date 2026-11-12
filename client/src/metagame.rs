@@ -362,6 +362,8 @@ impl Metagame {
             self.enter_username
                 .display(&mut self.engine, (left_third, top_left));
         } else if self.state == State::ChooseLobby {
+            self.engine
+                .print(left_third, top_left, "Liste des lobbies disponibles: ");
             self.lobby_selector
                 .display(&mut self.engine, (left_third, top_left));
         } else if self.state == State::CreateLobby {
@@ -371,9 +373,13 @@ impl Metagame {
             self.in_lobby
                 .display(&mut self.engine, (left_third, top_left));
         } else if self.state == State::InGame {
-            self.game.display(&mut self.engine);
-            self.chat
-                .display(&mut self.engine, self.game.get_team_colors());
+            self.game
+                .display(&mut self.engine, self.focus == Focus::Game);
+            self.chat.display(
+                &mut self.engine,
+                self.game.get_team_colors(),
+                self.focus == Focus::Chat,
+            );
         }
         self.engine.draw(); // draw the screen
     }

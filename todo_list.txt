@@ -1,8 +1,6 @@
 En vrac:
 -> retirer un max de 'unwrap' du serveur
 -> popup quand on fait echap lors d'une partie
--> rajouter indicateur sur le focus (jeux / chat)
--> rajouter indicateur quand c'est à nous de jouer
 -> majuscules dans le chat !!
 -> sycrhronisation version client/serveur
 -> rajouter indicateur chargement

@@ -569,15 +569,36 @@ impl Game {
 
     pub fn update(&self) {}
 
-    pub fn display(&mut self, e: &mut ConsoleEngine) {
+    pub fn display(&mut self, e: &mut ConsoleEngine, focus: bool) {
         // Afficher le plateau
         self.board
             .display(e, &self.pieces, &self.team_colors, self.selected_texture);
 
         // message d'attente
         if self.is_playing != self.color {
-            let status_y = (self.board.board_size() * 3) as i32;
-            e.print(0, status_y, "Un autre joueur est en train de jouer...");
+            let focus_color = if focus { Color::Red } else { Color::Reset };
+            let status_y = 1 + (self.board.board_size() * 3) as i32;
+            e.print_fbg(
+                2,
+                status_y,
+                "Un autre joueur est en train de jouer...",
+                Color::Reset,
+                focus_color,
+            );
+        } else {
+            let status_y = 1 + (self.board.board_size() * 3) as i32;
+            let focus_color = if focus {
+                Color::DarkGreen
+            } else {
+                Color::Reset
+            };
+            e.print_fbg(
+                2,
+                status_y,
+                "C'est à votre tour de jouer :)",
+                Color::Reset,
+                focus_color,
+            );
         }
 
         // afficher le menu de sélection par-dessus le plateau
@@ -588,7 +609,13 @@ impl Game {
         let offset_y = self.board.board_size() as i32 * 3;
         // indication des commandes
         if self.choosing_spawn {
-            //e.fill_rect(offset_x, offset_y, 59, 4, pixel::pxl(' '));
+            e.fill_rect(
+                offset_x + 2,
+                offset_y + 1,
+                offset_x + 59,
+                offset_y + 8,
+                pixel::pxl(' '),
+            );
             e.print(offset_x + 2, offset_y + 1, "Choisissez une case de spawn");
             e.print(
                 offset_x + 2,
@@ -618,7 +645,13 @@ impl Game {
         let affordable = self.affordable_pieces();
 
         // fond du menu
-        //e.fill_rect(offset_x, offset_y, 59, 10, pixel::pxl(' '));
+        e.fill_rect(
+            offset_x + 2,
+            offset_y + 1,
+            offset_x + 59,
+            offset_y + 8,
+            pixel::pxl(' '),
+        );
 
         e.print(
             offset_x + 2,

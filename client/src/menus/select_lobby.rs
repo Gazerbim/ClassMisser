@@ -45,7 +45,7 @@ impl SelectLobby {
                 first = ">".to_owned();
             }
             first.push_str(&self.elements[i as usize]);
-            e.print(top_left.0, top_left.1 + i, &first)
+            e.print(top_left.0, top_left.1 + i + 2, &first)
         }
     }
 }
