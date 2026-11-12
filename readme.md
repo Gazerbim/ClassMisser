@@ -4,15 +4,15 @@
 ### Lancer le jeux:
 #### 1) Installer rust
 Un lien vers la documentation:  
-      https://rust-lang.org/fr/tools/install/  
+    https://rust-lang.org/fr/tools/install/  
 
 #### 2) Compiler le jeux
 unzip ProgrammationReseau.zip  
-      cd ProgrammationReseau  
-      cd client  
-      cargo build  
-      cd ../server  
-      cargo build  
+    cd ProgrammationReseau  
+    cd client  
+    cargo build  
+    cd ../server  
+    cargo build  
 
 #### 3) Lancer le jeux
       cargo run  
