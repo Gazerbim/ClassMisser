@@ -1,17 +1,17 @@
 #  Class Misser
 ## Projet programmation réseau
 
-### Lancer le jeux:
+### Lancer le jeu:
 #### 1) Installer rust
 Un lien vers la documentation:  
 https://rust-lang.org/fr/tools/install/  
 
-#### 2) Installer le jeux
+#### 2) Télécharger le jeu
 ```bash
 git clone https://github.com/Gazerbim/ClassMisser.git
 ```
 
-#### 3) Compiler le jeux
+#### 3) Compiler le jeu
 Compilation du client:  
 ```bash
 cd ClassMisser  
@@ -23,8 +23,9 @@ Compilation du serveur:
 cd ../server  
 cargo build  
 ```
+La compilation va prendre du temps car il faut télécharger toutes les librairies (notemment polars pour le stockage csv). Une fois faite elle ne prendra plus de temps.
 
-#### 4) Lancer le jeux
+#### 4) Lancer le jeu
 On lance d'abord le serveur (car on est déjà dans son répertoire):  
 ```bash
 cargo run  
@@ -56,6 +57,6 @@ Pour lancer une partie, un joueur doit créer un lobby. Les autres joueurs peuve
 Flèches pour se déplacer.  
 Entrée pour sélectionner des options.  
 Esc pour quitter.  
-#### En jeux
+#### En jeu
 Tab pour changer son focus entre le jeux et le chat.  
 Espace pour sélectionner une pièce.
