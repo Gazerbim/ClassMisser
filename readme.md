@@ -12,7 +12,6 @@ git clone https://github.com/Gazerbim/ClassMisser.git
 ```
 
 #### 3) Compiler le jeux
-unzip ProgrammationReseau.zip  
 ```bash
 cd ClassMisser  
 cd client  
