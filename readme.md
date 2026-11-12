@@ -6,10 +6,15 @@
 Un lien vers la documentation:  
 https://rust-lang.org/fr/tools/install/  
 
-#### 2) Compiler le jeux
+#### 2) Installer le jeux
+```bash
+git clone https://github.com/Gazerbim/ClassMisser.git
+```
+
+#### 3) Compiler le jeux
 unzip ProgrammationReseau.zip  
 ```bash
-cd ProgrammationReseau  
+cd ClassMisser  
 cd client  
 cargo build  
 ```
@@ -18,7 +23,7 @@ cd ../server
 cargo build  
 ```
 
-#### 3) Lancer le jeux
+#### 4) Lancer le jeux
 ```bash
 cargo run  
 ```

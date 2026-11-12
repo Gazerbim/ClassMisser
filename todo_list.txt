@@ -1,8 +1,10 @@
 En vrac:
 -> retirer un max de 'unwrap' du serveur
 -> popup quand on fait echap lors d'une partie
+-> transition owner lorsque la partie n'a pas commencé
+-> afficher plus d'informations lorsqu'on est dans un lobby
 -> majuscules dans le chat !!
 -> sycrhronisation version client/serveur
 -> rajouter indicateur chargement
--> transition owner lorsque la partie n'a pas commencé
+-> mettre le chat directement dans le lobby plutot que dans la partie
 -> lorsqu'un spectateur arrive dans la partie, il n'a pas les points (mis à jour dès qu'un joueur joue donc c'est relativement ok)
