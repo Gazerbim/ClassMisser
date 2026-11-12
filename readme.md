@@ -9,27 +9,27 @@ https://rust-lang.org/fr/tools/install/
 #### 2) Compiler le jeux
 unzip ProgrammationReseau.zip  
 ```bash
-    cd ProgrammationReseau  
-    cd client  
-    cargo build  
+cd ProgrammationReseau  
+cd client  
+cargo build  
 ```
 ```bash
-    cd ../server  
-    cargo build  
+cd ../server  
+cargo build  
 ```
 
 #### 3) Lancer le jeux
 ```bash
-    cargo run  
+cargo run  
 ```
 On change de terminal: 
 ```bash
-    cd ../client  
-    cargo run <username> <password> --host <host> --action <action to do>  
+cd ../client  
+cargo run <username> <password> --host <host> --action <action to do>  
 ```
 
 Le nom d'utilisateur et le mot de passe sont obligatoires pour lancer un client.  
-L'option 'host' peut être omise et vaut localhost:9001 par défaut. (penser à préciser le port).  
+L'option 'host' peut être omise et vaut 127.0.0.1:9001 par défaut. (penser à préciser le port).  
 L'option 'action' peut être omise pour se connecter (signin), mais est utile pour créer un compte (signup).  
 Exemples:  
 ```bash
