@@ -166,20 +166,6 @@ impl Lobby {
     }
 
     pub fn is_lobby_empty(&self) -> bool {
-        // if self.list_players.len() > self.number_of_players as usize {
-        //     return false;
-        // } else {
-        //     let mut n = 0;
-        //     for i in 0..self.player_states.len() {
-        //         if !(self.player_states[i] == PlayerState::Disconnected) {
-        //             n += 1;
-        //         }
-        //     }
-        //     if n == 0 {
-        //         return true;
-        //     }
-        // }
-        // false
         if self.in_game {
             for i in 0..self.player_states.len() {
                 if self.player_states[i] == PlayerState::Playing
@@ -257,6 +243,9 @@ impl Lobby {
                                 }
                             }
                         }
+                    }
+                    if self.game.get_player_won() != -1 {
+                        self.in_game = false;
                     }
                     if message != "".to_string() {
                         if who < 0 {

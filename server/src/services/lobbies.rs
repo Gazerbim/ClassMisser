@@ -226,7 +226,7 @@ impl Lobbies {
                         game: Game::empty(),
                         chat: Chat::new(),
                         number_of_players: 0,
-                        player_states: vec![PlayerState::Playing],
+                        player_states: Vec::new(),
                     },
                 );
                 response_header = "created_lobby";
