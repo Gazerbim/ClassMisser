@@ -12,21 +12,24 @@ git clone https://github.com/Gazerbim/ClassMisser.git
 ```
 
 #### 3) Compiler le jeux
+Compilation du client:  
 ```bash
 cd ClassMisser  
 cd client  
 cargo build  
 ```
+Compilation du serveur:  
 ```bash
 cd ../server  
 cargo build  
 ```
 
 #### 4) Lancer le jeux
+On lance d'abord le serveur (car on est déjà dans son répertoire):  
 ```bash
 cargo run  
 ```
-On change de terminal: 
+On change de terminal puis on lance un premier client: 
 ```bash
 cd ../client  
 cargo run <username> <password> --host <host> --action <action to do>  
