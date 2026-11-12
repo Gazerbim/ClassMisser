@@ -4,29 +4,39 @@
 ### Lancer le jeux:
 #### 1) Installer rust
 Un lien vers la documentation:  
-    https://rust-lang.org/fr/tools/install/  
+https://rust-lang.org/fr/tools/install/  
 
 #### 2) Compiler le jeux
 unzip ProgrammationReseau.zip  
+```bash
     cd ProgrammationReseau  
     cd client  
     cargo build  
+```
+```bash
     cd ../server  
     cargo build  
+```
 
 #### 3) Lancer le jeux
-      cargo run  
+```bash
+    cargo run  
+```
 On change de terminal: 
-      cd ../client  
-      cargo run <username> <password> --host <host> --action <action to do>  
+```bash
+    cd ../client  
+    cargo run <username> <password> --host <host> --action <action to do>  
+```
 
 Le nom d'utilisateur et le mot de passe sont obligatoires pour lancer un client.  
 L'option 'host' peut être omise et vaut localhost:9001 par défaut. (penser à préciser le port).  
 L'option 'action' peut être omise pour se connecter (signin), mais est utile pour créer un compte (signup).  
 Exemples:  
+```bash
 cargo run j1 j1  
 cargo run utilisateur mdp --action signup  
 cargo run j1 j1 --host 192.168.1.38:9001  
+```
 
 ### Jouer:
 Pour jouer il faut au minimum deux clients et un serveur.  
