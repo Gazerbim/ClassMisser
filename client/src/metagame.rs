@@ -8,6 +8,7 @@ use crate::client::Client;
 use crate::game::Game;
 use crate::menus::config::Config;
 use crate::menus::home::Home;
+use crate::menus::popup::Popup;
 use crate::menus::replay::Replay;
 use crate::types::protocol::Response;
 use crate::types::states::{Focus, State};
@@ -33,6 +34,7 @@ pub struct Metagame {
     config: Config,
     saves_selector: SelectLobby,
     replay: Replay,
+    popup_quit_game: Popup,
 
     username: String,
     password: String,
@@ -83,6 +85,11 @@ impl Metagame {
             lobby_selector: SelectLobby::new(Vec::new()),
             saves_selector: SelectLobby::new(Vec::new()),
             replay: Replay::new(),
+            popup_quit_game: Popup::new(
+                "Quoi ?! VoUs VoUlEz QuItTeR lA pArTiE ?!!".to_string(),
+                "non".to_string(),
+                "oui".to_string(),
+            ),
             lobby_creator: TextInput::new("Nom du salon à créer".to_string(), 25),
             in_lobby: InLobby::new("".to_string()),
             username: String::from(""),
@@ -233,41 +240,31 @@ impl Metagame {
             }
         } else if self.state == State::InGame {
             if self.engine.is_key_pressed(console_engine::KeyCode::Esc) {
-                let req = serde_json::json!({
-                    "type": "server",
-                    "header": "get_points"
-                })
-                .to_string()
-                    + "$";
-                self.client.send(&req);
-                let mut req =
-                    "{\"type\": \"lobbies\",\"header\": \"quit_lobby\", \"data\": { \"name\": \""
-                        .to_string();
-                req.push_str(&self.in_lobby.get_name());
-                req.push_str("\"}}$");
-                if self.client.send(&req) {
-                    self.state = State::Home;
-                    self.in_lobby.reset();
-                }
-            } else if self.engine.is_key_pressed(console_engine::KeyCode::Tab) {
-                if self.focus == Focus::Game {
-                    self.focus = Focus::Chat;
-                } else {
-                    self.focus = Focus::Game;
-                }
+                self.popup_quit_game.switch_state();
             }
-            if self.focus == Focus::Game {
-                self.game.handling_hevents(
-                    &mut self.engine,
-                    self.in_lobby.get_name(),
-                    self.config
-                        .get_option("selected_texture")
-                        .unwrap()
-                        .as_u64()
-                        .unwrap() as usize,
-                );
+            if self.popup_quit_game.get_state() {
+                self.popup_quit_game.handling_events(&self.engine);
             } else {
-                self.chat.handling_events(&self.engine);
+                if self.engine.is_key_pressed(console_engine::KeyCode::Tab) {
+                    if self.focus == Focus::Game {
+                        self.focus = Focus::Chat;
+                    } else {
+                        self.focus = Focus::Game;
+                    }
+                }
+                if self.focus == Focus::Game {
+                    self.game.handling_hevents(
+                        &mut self.engine,
+                        self.in_lobby.get_name(),
+                        self.config
+                            .get_option("selected_texture")
+                            .unwrap()
+                            .as_u64()
+                            .unwrap() as usize,
+                    );
+                } else {
+                    self.chat.handling_events(&self.engine);
+                }
             }
         }
         false
@@ -324,6 +321,28 @@ impl Metagame {
             }
             self.chat
                 .update(&mut self.client, &self.in_lobby.get_name());
+            if self.popup_quit_game.get_state() && self.popup_quit_game.get_enter_pressed() {
+                if self.popup_quit_game.get_selection() == 0 {
+                    self.popup_quit_game.switch_state();
+                } else {
+                    let req = serde_json::json!({
+                        "type": "server",
+                        "header": "get_points"
+                    })
+                    .to_string()
+                        + "$";
+                    self.client.send(&req);
+                    let mut req =
+                        "{\"type\": \"lobbies\",\"header\": \"quit_lobby\", \"data\": { \"name\": \""
+                            .to_string();
+                    req.push_str(&self.in_lobby.get_name());
+                    req.push_str("\"}}$");
+                    if self.client.send(&req) {
+                        self.state = State::Home;
+                        self.in_lobby.reset();
+                    }
+                }
+            }
         }
     }
 
@@ -380,6 +399,10 @@ impl Metagame {
                 self.game.get_team_colors(),
                 self.focus == Focus::Chat,
             );
+            if self.popup_quit_game.get_state() {
+                self.popup_quit_game
+                    .diplay(&mut self.engine, (left_third - 15, top_left));
+            }
         }
         self.engine.draw(); // draw the screen
     }
